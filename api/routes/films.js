@@ -4,14 +4,14 @@ const path = require('path')
 const fs = require('fs')
 const mongoose =require('mongoose');
 const multer =require('multer');
-const checkAuth=require('../middleware/check-auth');
+const auth=require('../middleware/auth');
 const Film=require('../models/film');
 const Rating =require('../models/rating');
 const Category = require('../models/category');
 const Director=require('../models/director');
 const FilmsController = require('../controllers/film');
 const db = mongoose.connection;
-
+const Comment =require('../models/comment')
 const uploadPath = path.join('public', Film.coverImageBasePath)
 
 const imageMimeTypes = ['image/jpeg','image/jpg', 'image/png', 'images/gif']
@@ -58,7 +58,52 @@ router.get('/search',async(req,res,next)=>{
   })
 })
 
-router.get('/',FilmsController.films_get_all);
+router.get('/',auth,async(req,res,next)=>{
+
+    Film.find().sort({publishDate:'desc'})
+    .select('name publishDate description cast coverImageName'+
+    'director category linkTrailer create_at _id')
+    .exec()
+    .then(docs=>{
+        
+        const respond = {
+            count:docs.length,
+            films:docs.map(doc=>{
+                return{
+                    name:doc.name,
+                
+                    publishDate:doc.publishDate,
+                    description:doc.description,
+                    create_at:doc.create_at,
+                    cast:doc.cast,
+                    coverImageName:doc.coverImageName,
+                    director:doc.director,
+                    category:doc.category,
+                    linkTrailer:doc.linkTrailer,
+                    _id:doc._id,
+                    request:{
+                        type:'GET',
+                        url:'http://localhost:3000/films/'+doc._id
+                    }
+                }
+            }),
+            
+        }
+        //if(docs.length>=0){
+            res.status(200).json(respond)
+        // }else{
+        //     res.status(400).json({
+        //         message:'No entries found'
+        //     });
+        // }
+    })
+    .catch(err=>{
+        console.log(err);
+        res.status(500).json({
+            error:err
+        });
+    });
+});
 
 // function search(query) {
 //     return function(element) {
@@ -75,7 +120,7 @@ router.get('/',FilmsController.films_get_all);
 //     return films.filter(search(query));
 // }
 
-router.post('/',checkAuth,upload.single('coverImageName'),async(req,res,next)=>{
+router.post('/',auth,upload.single('coverImageName'),async(req,res,next)=>{
     // const {rating} =req.body
     // if(parseFloat(rating) > 5){
     //     res.status(500).json({
@@ -162,6 +207,7 @@ router.get('/:filmId',async(req,res,next)=>{
     const id = req.params.filmId;
     const film = await Film.findById(id)
     const rating =await Rating.find({film:film.id}).exec();
+    const comment =await Comment.find({film:film.id}).exec();
     Rating.aggregate([
         { $unwind: "$film" },
         { 
@@ -196,7 +242,7 @@ router.get('/:filmId',async(req,res,next)=>{
      Film.findById(id)
         .select('name publishDate description cast coverImageName'+
         ' director category linkTrailer create_at _id')
-        .populate( 'category director ')
+        .populate( 'category director')
         .exec()
         .then(doc=>{
             //console.log("From database",doc)
@@ -216,6 +262,7 @@ router.get('/:filmId',async(req,res,next)=>{
                 res.status(200).json({
                     film:doc,
                     rating : rating,
+                    comment:comment,
                     averageRating:avg,
                     request:{
                         type:'GET',
@@ -245,30 +292,91 @@ router.get('/:filmId',async(req,res,next)=>{
   
 })
 
-router.patch('/:filmId',(req,res,next)=>{
-    const id= req.params.filmId;
-    const updateOps={};
-    for(const ops of req.body){
-        updateOps[ops.propName]=ops.value;   
-    }
-    Film.update({_id:id},{$set:updateOps})
-    .exec()
-    .then(result=>{
+router.put('/:filmId',auth,upload.single('coverImageName'),async(req,res,next)=>{
+    // const id =req.params.filmId
+    // const updateOps={};
+    // for(const ops of req.body){
+    //     updateOps[ops.propName]=ops.value;   
+    // }
+    // Film.update({_id:id},{$set:updateOps})
+    // .exec()
+    // .then(result=>{
         
+    //     res.status(200).json({
+    //         message:'Film updated',
+    //         request:{
+    //             type:'GET',
+    //             url:'http://localhost:3000/films/'+id
+    //         }
+    //     });
+    // })
+    // .catch(err=>{
+    //     console.log(err);
+    //     res.status(500).json({
+    //         error:err
+    //     });
+    // });
+    let film;
+    film = await Film.findById(req.params.filmId)
+    const rating =await Rating.find({film:film.id}).exec();
+    const comment =await Comment.find({film:film.id}).exec();
+
+    const fileName = req.file != null ? req.file.filename : null
+   
+        film.name =req.body.name,
+        film.coverImageName=fileName,
+        //rating :req.body.rating,
+        film.publishDate=req.body.publishDate,
+        film. description=req.body.description,
+        film.linkTrailer=req.body.linkTrailer,
+        film.cast=req.body.cast,
+        film.category=req.body.categoryId,
+        film. director=req.body.directorId
+    
+    film.save()
+    .then(result=>{
+        if(result){
+            var total = 0;
+                for(var i = 0; i < rating.length; i++) {
+                    total += rating[i].numberofrating;
+                }
+                var avg = 0
+                if(rating.length == ''){
+                    avg=0
+                }else{
+                    avg=total / rating.length;
+                }
         res.status(200).json({
-            message:'Film updated',
-            request:{
-                type:'GET',
-                url:'http://localhost:3000/films/'+id
+            message:"Created film successfully",
+            createdFilm:{
+                name:result.name,
+                publishDate:result.publishDate,
+                description:result.description,
+                create_at:result.create_at,
+                cast:result.cast,
+                coverImageName:result.coverImageName,
+                director:result.director,
+                category:result.category,
+                linkTrailer:result.linkTrailer,
+                rating :rating,
+                comment:comment,
+                ratingAverage:avg,
+                _id:result._id,
+                request:{
+                    type:'GET',
+                    url:'http://localhost:3000/films/'+result._id
+                }
             }
+
         });
+    }
     })
     .catch(err=>{
-        console.log(err);
         res.status(500).json({
             error:err
-        });
-    });
+        })
+    })
+//     })
     
 
     

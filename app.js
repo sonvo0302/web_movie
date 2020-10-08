@@ -55,7 +55,7 @@ app.use((req,res,next)=>{
 })
 const usersRoutes=require('./api/routes/users');
 const ratingRoutes = require('./api/routes/ratings');
-
+const commentRoutes = require('./api/routes/comments');
 
 //Routes which should handle requests
 app.use('/films',filmRoutes);
@@ -66,6 +66,7 @@ app.use('/user',usersRoutes);
 app.use('/directors',directorRouter);
 app.use('/user_info',userinfoRouter);
 app.use('/ratings',ratingRoutes);
+app.use('/comments',commentRoutes);
 
 app.use((req,res,next)=>{
     const error=new Error('Not found');
