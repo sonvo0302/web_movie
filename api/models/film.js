@@ -25,6 +25,5 @@ filmSchema.virtual('coverImagePath').get(function() {
   })
 
 
-
 module.exports = mongoose.model('Film',filmSchema);
 module.exports.coverImageBasePath = coverImageBasePath

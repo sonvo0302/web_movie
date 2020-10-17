@@ -3,9 +3,10 @@ const User = require('../models/user')
 const auth = require('../middleware/auth')
 const router = express.Router()
 const User_Info = require('../models/user_info')
+const Film_User_History =require('../models/film_user_history')
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs')
-
+const Rating = require('../models/rating')
 
 
 router.get('/', auth, async (req, res, next) => {
@@ -76,7 +77,7 @@ router.post('/reset', function (req, res) {
             html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
-            <a href='http://localhost:3000/change-password/"+ currentDateTime + "+++" + userData.email + "'>Click On This Link</a>\
+            <a href='http://localhost:3000/user/updatePassword/"+userData.email + "'>Click On This Link</a>\
             </p>"
         };
 
@@ -100,8 +101,8 @@ router.post('/reset', function (req, res) {
     })
 });
 
-router.post('/updatePassword', (req, res) => {
-    User.findOne({ email: req.body.email }, (errorFind, user) => {
+router.post('/updatePassword/:email', (req, res) => {
+    User.findOne({ email: req.params.email }, (errorFind, user) => {
         if (req.body.password == req.body.password2) {
             bcrypt.hash(req.body.password, 8, (err, hash) => {
                 if (err) throw err;
@@ -215,7 +216,6 @@ router.post('/register', async (req, res) => {
         if (users) {
             return res.status(401).json({ message: 'Register failed! Email exists ' })
         }
-
         const user = new User(req.body)
         await user.save()
         const token = await user.generateAuthToken()
@@ -247,8 +247,10 @@ router.post('/login', async (req, res) => {
         if (!user) {
             return res.status(401).send({ error: 'Login failed! Check authentication credentials' })
         }
-
+       
         const token = await user.generateAuthToken()
+        
+
         res.status(200).json({
             message: 'Login Successful',
             user: user,
@@ -272,32 +274,41 @@ router.get('/me', auth, async (req, res) => {
     }
 
 })
-router.get('/:userId', async (req, res, next) => {
+router.get('/:userId',auth, async (req, res, next) => {
+    const loginId = req.user._id;
     const id = req.params.userId;
-    const user = await User.findById(id)
-    const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
-    await User.findById(id)
-        .select('email password _id')
-        .exec()
-        .then(doc => {
-            console.log("From database", doc)
-            if (doc) {
-                res.status(200).json({
-                    user: doc,
-                    user_info: user_info,
-                    request: {
-                        type: 'GET',
-                        url: 'http://localhost:3000/user'
-                    }
-                });
-            } else {
-                res.status(404).json({ message: 'No valid entry found for ID' });
-            }
-        })
-        .catch(err => {
-            console.log(err);
-            res.status(500).json({ error: err });
-        });
+    if(loginId == id){
+        const user = await User.findById(id)
+        const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
+        const user_histories =await Film_User_History.find({user:user.id}).exec();
+        const user_rating = await Rating.find({user:user.id}).exec();
+        await User.findById(id)
+            .select('email password _id')
+            .exec()
+            .then(doc => {
+                console.log("From database", doc)
+                if (doc) {
+                    res.status(200).json({
+                        user: doc,
+                        user_info: user_info,
+                        film_user_histories : user_histories,
+                        user_rating:user_rating,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:3000/user'
+                        }
+                    });
+                } else {
+                    res.status(404).json({ message: 'No valid entry found for ID' });
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                res.status(500).json({ error: err });
+            });
+    }else{
+        res.status(500).json({message:'ID does not match'})
+    }
 })
 
 
