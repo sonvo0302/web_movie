@@ -4,7 +4,7 @@ const mongoose =require('mongoose');
 const Director =require('../models/director');
 const Film=require('../models/film');
 
-router.get('/',async(req,res,next)=>{
+router.get('/all',async(req,res,next)=>{
     Director.find()
     .select('full_name mobile_phone dateofbirth  _id')
     .exec()
@@ -40,7 +40,7 @@ router.get('/',async(req,res,next)=>{
     });
 })
 //Handling POST requests to /categories
-router.post('/',async(req,res,next)=>{
+router.post('/new',async(req,res,next)=>{
     const {mobile_phone} =req.body
     if(mobile_phone.length == 10){
     const director=new Director({
@@ -62,7 +62,7 @@ router.post('/',async(req,res,next)=>{
                 _id:result._id,
                 request:{
                     type:'GET',
-                    url:'http://localhost:3000/directors/'+result._id
+                    url:'http://localhost:3000/director/'+result._id
                 }
             }
 
@@ -96,7 +96,7 @@ router.get('/:directorId',async(req,res,next)=>{
                 films:films,
                 request:{
                     type:'GET',
-                    url:'http://localhost:3000/directors'
+                    url:'http://localhost:3000/director'
                 }
             });
         }else{

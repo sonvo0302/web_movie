@@ -4,7 +4,7 @@ const auth = require('../middleware/auth');
 const Film_User_History = require('../models/film_user_history');
 const mongoose=require('mongoose');
 
-router.get('/',auth,(req,res)=>{
+router.get('/all',auth,(req,res)=>{
     Film_User_History
     .find().select('user film __id')
     .then(docs => {
@@ -18,7 +18,7 @@ router.get('/',auth,(req,res)=>{
                     _id: doc._id,
                     request: {
                         type: 'GET',
-                        url: 'http://localhost:3000/film_user_histories/' + doc._id
+                        url: 'http://localhost:3000/film_user_history/' + doc._id
                     }
                 }
             }),
@@ -54,7 +54,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
                         film_user_history: doc,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/film_user_histories'
+                            url: 'http://localhost:3000/film_user_history'
                         }
                     });
                 } else {

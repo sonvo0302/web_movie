@@ -6,7 +6,7 @@ const { map } = require('../../app');
 const Film =require('../models/film');
 const Category=require('../models/category');
 
-router.get('/',(req,res,next)=>{
+router.get('/all',(req,res,next)=>{
     Film_Category.find()
     .select('film category _id')
     .populate('film category')
@@ -35,7 +35,7 @@ router.get('/',(req,res,next)=>{
     })
 })
 
-router.post('/',(req,res,next)=>{
+router.post('/new',(req,res,next)=>{
  
     Category.findById(req.body.categoryId)
     .then(category=>{

@@ -6,7 +6,7 @@ const mongoose =require('mongoose');
 const Film =require('../models/film')
 
 
-router.get('/',auth,async(req,res,next)=>{
+router.get('/all',auth,async(req,res,next)=>{
 
     await Comment.find()
     .select('user film content updatedDate create_at _id').populate('film')
@@ -24,7 +24,7 @@ router.get('/',auth,async(req,res,next)=>{
                     _id:doc._id,
                     request:{
                         type:'GET',
-                        url:'http://localhost:3000/comments/'+doc._id
+                        url:'http://localhost:3000/comment/'+doc._id
                     }
                 }
             })
@@ -45,7 +45,7 @@ router.get('/',auth,async(req,res,next)=>{
     });
 })
 
-router.post('/',auth,async(req,res,next)=>{
+router.post('/new',auth,async(req,res,next)=>{
     const {content} =req.body
     const loginId = req.user._id;
     console.log(loginId);
@@ -70,7 +70,7 @@ router.post('/',auth,async(req,res,next)=>{
                 _id:result._id,
                 request:{
                     type:'GET',
-                    url:'http://localhost:3000/comments/'+result._id
+                    url:'http://localhost:3000/comment/'+result._id
                 }
             }
 
@@ -99,7 +99,7 @@ router.get('/:commentId',async(req,res,next)=>{
                     comment: doc,
                     request:{
                         type:'GET',
-                        url:'http://localhost:3000/comments'
+                        url:'http://localhost:3000/comment'
                     }
                 });
             }else{
@@ -126,7 +126,7 @@ router.get('/:commentId',async(req,res,next)=>{
 })
 
 
-router.put('/:commentId',(req,res,next)=>{
+router.put('/edit/:commentId',(req,res,next)=>{
     const dataForUpdate = { content: req.body.content, updatedDate: Date.now().toString() }
     Comment.findByIdAndUpdate(req.params.commentId, dataForUpdate, {new: true}).exec()
     .then(result=>{
@@ -135,7 +135,7 @@ router.put('/:commentId',(req,res,next)=>{
                 comment:result,
                 request:{
                     type:'GET',
-                    url:'http://localhost:3000/comments'+result._id
+                    url:'http://localhost:3000/comment'+result._id
                 }
             });
         }else{
@@ -144,7 +144,7 @@ router.put('/:commentId',(req,res,next)=>{
     })
 });
 
-router.delete('/:commentId',(req,res,next)=>{
+router.delete('/delete/:commentId',(req,res,next)=>{
     const id= req.params.commentId;
     Comment.remove({_id:id})
     .exec()
@@ -153,7 +153,7 @@ router.delete('/:commentId',(req,res,next)=>{
             message:'Comment Deleted',
             request:{
                 type:'POST',
-                url:'http://localhost:3000/comments',
+                url:'http://localhost:3000/comment',
                 body:{
                     user:'userId',
                     film:'filmId',

@@ -8,7 +8,7 @@ const Category =require('../models/category');
 const Film=require('../models/film');
 
 //Handling incoming GET requests to /categories
-router.get('/',auth,async(req,res,next)=>{
+router.get('/all',auth,async(req,res,next)=>{
     await Category.find()
     .select('name _id')
     .exec()
@@ -42,7 +42,7 @@ router.get('/',auth,async(req,res,next)=>{
     });
 })
 //Handling POST requests to /categories
-router.post('/',(req,res,next)=>{
+router.post('/new',(req,res,next)=>{
     const category=new Category({
         _id:new mongoose.Types.ObjectId(),
         name:req.body.name
@@ -99,7 +99,7 @@ router.get('/:categoryId',async(req,res,next)=>{
         res.status(500).json({error:err});
     });
 })
-router.delete('/:categoryId',async(req,res,next)=>{
+router.delete('/delete/:categoryId',async(req,res,next)=>{
     const id= req.params.filmId;
     await Category.remove({_id:id})
     .exec()

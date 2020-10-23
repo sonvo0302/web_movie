@@ -7,7 +7,7 @@ const auth = require('../middleware/auth');
 const User = require('../models/user');
 
 
-router.get('/', auth, async (req, res, next) => {
+router.get('/all', auth, async (req, res, next) => {
     await User_Info.find()
         .select('name gender dateofbirth user  mobile_phone  _id')
         .exec()
@@ -46,7 +46,7 @@ router.get('/', auth, async (req, res, next) => {
 })
 
 
-router.post('/', auth, async (req, res, next) => {
+router.post('/new', auth, async (req, res, next) => {
     const { mobile_phone } = req.body
     const loginId = req.user._id;
     const user_info = await User_Info.find({ user: loginId }).exec()

@@ -5,7 +5,7 @@ const auth = require('../middleware/auth')
 const mongoose = require('mongoose');
 const Film = require('../models/film')
 
-router.get('/', auth, async (req, res, next) => {
+router.get('/all', auth, async (req, res, next) => {
 
     await Rating.find()
         .select('user film numberofrating _id').populate('film')

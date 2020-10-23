@@ -313,7 +313,7 @@ router.get('/info/:userId', auth, async (req, res, next) => {
     }
 })
 
-router.get('/filmUserHistory/:userId', auth, async (req, res, next) => {
+router.get('/user_history/:userId', auth, async (req, res, next) => {
     const loginId = req.user._id;
     const id = req.params.userId;
     if (loginId == id) {
@@ -350,7 +350,7 @@ router.get('/filmUserHistory/:userId', auth, async (req, res, next) => {
     }
 })
 
-router.get('/userRatingHistory/:userId', auth, async (req, res, next) => {
+router.get('/rating_history/:userId', auth, async (req, res, next) => {
     const loginId = req.user._id;
     const id = req.params.userId;
     if (loginId == id) {
@@ -389,7 +389,7 @@ router.get('/userRatingHistory/:userId', auth, async (req, res, next) => {
 
 
 
-router.post('/me/logout', auth, async (req, res) => {
+router.post('/logout', auth, async (req, res) => {
     // Log user out of the application
     try {
         req.user.tokens = req.user.tokens.filter((token) => {
@@ -402,7 +402,7 @@ router.post('/me/logout', auth, async (req, res) => {
     }
 })
 
-router.post('/me/logoutall', auth, async (req, res) => {
+router.post('/logoutall', auth, async (req, res) => {
     // Log user out of all devices
     try {
         req.user.tokens.splice(0, req.user.tokens.length)
@@ -413,7 +413,7 @@ router.post('/me/logoutall', auth, async (req, res) => {
     }
 })
 
-router.delete('/:userinfoId', function (req, res) {
+router.delete('/delete/:userinfoId', function (req, res) {
     User.findByIdAndRemove(req.params.userinfoId, function (err, user) {
         if (err) return res.status(500).send("There was a problem deleting the user.");
         res.status(200).send("User: " + user.username + " was deleted.");
