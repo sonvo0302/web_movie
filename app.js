@@ -58,16 +58,16 @@ const ratingRoutes = require('./api/routes/ratings');
 const commentRoutes = require('./api/routes/comments');
 const film_user_history = require('./api/routes/film_user_histories')
 //Routes which should handle requests
-app.use('/films',filmRoutes);
-app.use('/categories',categoryRoutes);
+app.use('/film',filmRoutes);
+app.use('/categorie',categoryRoutes);
 app.use('/film_category',filmcategoryRoutes);
 
 app.use('/user',usersRoutes);
-app.use('/directors',directorRouter);
+app.use('/director',directorRouter);
 app.use('/user_info',userinfoRouter);
-app.use('/ratings',ratingRoutes);
-app.use('/comments',commentRoutes);
-app.use('/film_user_histories',film_user_history);
+app.use('/rating',ratingRoutes);
+app.use('/comment',commentRoutes);
+app.use('/film_user_historie',film_user_history);
 app.use((req,res,next)=>{
     const error=new Error('Not found');
     error.status(404);

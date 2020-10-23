@@ -14,7 +14,8 @@ const filmSchema=mongoose.Schema({
     category:{type:mongoose.Schema.Types.ObjectId,require:true,ref:'Category'},
     director:{type:mongoose.Schema.Types.ObjectId,require:true,ref:'Director'},
     linkTrailer:{type:String,require:true},
-    cast:{type:String,require:true}
+    cast:{type:String,require:true},
+    viewFilm:{type:Number,default:0}
 })
 
 

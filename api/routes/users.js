@@ -135,7 +135,7 @@ router.post('/changePassword/:email', (req, res) => {
     })
 })
 
-router.put('/update/:id', async (req, res) => {
+router.put('/update/:id',auth, async (req, res) => {
     const id = req.params.id;
     User.findById(id, function (err, user) {
         const isPasswordMatch = bcrypt.compare(req.body.currentPassword, user.password)
@@ -189,6 +189,7 @@ router.put('/update/:id', async (req, res) => {
             });
         }
     })
+
 });
 
 
@@ -249,11 +250,11 @@ router.post('/login', async (req, res) => {
             }
             const token = await user.generateAuthToken()
 
-
             res.status(200).json({
                 message: 'Login Successful',
+                token: token,
                 user: user,
-                token: token
+               
             })
 
         } catch (err) {
@@ -275,7 +276,7 @@ router.get('/me', auth, async (req, res) => {
     }
 
 })
-router.get('/userInfo/:userId', auth, async (req, res, next) => {
+router.get('/info/:userId', auth, async (req, res, next) => {
     const loginId = req.user._id;
     const id = req.params.userId;
     if (loginId == id) {
