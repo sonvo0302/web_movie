@@ -38,6 +38,10 @@ const userSchema = mongoose.Schema({
     deletedDate: {
         type: Date,
         default: null
+    },
+    resetToken:{
+        type:String,
+        default:null
     }
 })
 

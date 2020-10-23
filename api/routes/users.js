@@ -7,9 +7,38 @@ const Film_User_History = require('../models/film_user_history')
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs')
 const Rating = require('../models/rating')
+const jwt = require('jsonwebtoken')
 
 
-router.get('/', auth, async (req, res, next) => {
+
+// router.post('/send', function(req, res, next) {
+//     var transporter =  nodemailer.createTransport({ // config mail server
+//         service: 'Gmail',
+//         auth: {
+//             user: 'sonngao2512@gmail.com',
+//             pass: 'iuemnhiu2512'
+//         }
+//     });
+//     var mainOptions = { // thiết lập đối tượng, nội dung gửi mail
+//         from: 'Thanh Batmon',
+//         to: 'tomail@gmail.com',
+//         subject: 'Test Nodemailer',
+//         text: 'You recieved message from ' + req.body.email,
+//         html: '<p>You have got a new message</b><ul><li>Username:' + req.body.name + '</li><li>Email:' + req.body.email + '</li><li>Username:' + req.body.message + '</li></ul>'
+//     }
+//     transporter.sendMail(mainOptions, function(err, info){
+//         if (err) {
+//             console.log(err);
+//             res.redirect('/');
+//         } else {
+//             console.log('Message sent: ' +  info.response);
+//             res.redirect('/');
+//         }
+//     });
+// });
+
+
+router.get('/all', auth, async (req, res, next) => {
     await User.find()
         .select('username email password _id')
         .exec()
@@ -45,41 +74,51 @@ router.get('/', auth, async (req, res, next) => {
         });
 })
 
-router.get('/resetPassword', (req, res) => res.render('users/resetpassword'));
-router.post('/resetPassword', function (req, res) {
+
+router.post('/password/reset', function (req, res) {
     User.findOne({ email: req.body.email }, function (error, userData) {
         if (!userData) {
             res.status(400).json({
                 mg: 'Email not exists'
             })
         }
-        var transporter = nodemailer.createTransport({
-            // service: 'gmail',//smtp.gmail.com  //in place of service use host...
 
-            // auth: {
-            //     user: 'ashutosh.choubey@codeclouds.in',
-            //     pass: 'ashu@q@w3e4r%'
-            // }
-            host: "smtp.mailtrap.io",
-            port: 2525,
+        var transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
             auth: {
-                user: "b17319188d5ff4",
-                pass: "fe7f169ce62c87"
+                user: 'sonvo0302@gmail.com', //Tài khoản gmail vừa tạo
+                pass: 'Sonngao2512' //Mật khẩu tài khoản gmail vừa tạo
+            },
+            tls: {
+                // do not fail on invalid certs
+                rejectUnauthorized: false
             }
+            // host: "smtp.mailtrap.io",
+            // port: 2525,
+            // auth: {
+            //     user: "b17319188d5ff4",
+            //     pass: "fe7f169ce62c87"
+            // }
 
         });
+        const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
+        userData.resetToken = resetToken;
+        userData.save()
         var currentDateTime = new Date();
         var mailOptions = {
-            from: 'noreply@hello.com',
+            from: 'sonvo0302@gmail.com',
             to: req.body.email,
             subject: 'Password Reset',
             // text: 'That was easy!',
             html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
-            <a href='http://localhost:3000/user/changePassword/"+ userData.email + "'>Click On This Link</a>\
+            <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' + userData.resetToken + "'>Click On This Link</a>\
             </p>"
         };
+        console.log(userData.resetToken)
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
@@ -87,7 +126,7 @@ router.post('/resetPassword', function (req, res) {
             } else {
                 console.log('Email sent: ' + info.response);
                 User.updateOne({ email: userData.email }, {
-                    token: currentDateTime,
+                    resetToken: resetToken,
 
                 }, { multi: true }, function (err, affected, resp) {
                     return res.status(200).json({
@@ -101,31 +140,43 @@ router.post('/resetPassword', function (req, res) {
     })
 });
 
-router.post('/changePassword/:email', (req, res) => {
-    User.findOne({ email: req.params.email }, (errorFind, user) => {
-        if (req.body.password == req.body.password2) {
-            bcrypt.hash(req.body.password, 8, (err, hash) => {
-                if (err) throw err;
-                const newPassword = hash;
-                const condition = ({ _id: user._id })
-                const dataForUpdate = { password: newPassword, updatedDate: Date.now().toString() }
-                User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                    .then(result => {
-                        if (result) {
-                            res.status(200).json({
-                                user: result,
-                                request: {
-                                    type: 'GET',
-                                    url: 'http://localhost:3000/user/' + result._id
-                                }
-                            });
-                        } else {
-                            res.status(404).json({ message: 'There was a problem updating password' });
-                        }
-                    })
+router.post('/password/change', (req, res) => {
+    const reset = req.query.resetToken
+    //const token_reset = jwt.verify(reset,process.env.RESET_KEY)
+    const email_reset = req.query.email
+   
+    User.findOne({ email: email_reset, resetToken: reset }, (errorFind, user) => {
+        if(req.body.password.length <8){
+            res.status(401).json({message:'Password must be 8 characters or more'})
+        }else
+            if (req.body.password == req.body.password2) {
+                bcrypt.hash(req.body.password, 8, (err, hash) => {
+                    if (err) throw err;
+                    const newPassword = hash;
+                    const condition = ({ _id: user._id })
+                    const dataForUpdate = { password: newPassword, updatedDate: Date.now().toString() }
+                    User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                        .then(result => {
+                            if (result) {
+                                res.status(200).json({
+                                    user: result,
+                                    request: {
+                                        type: 'GET',
+                                        url: 'http://localhost:3000/user/' + result._id
+                                    }
+                                });
+                            } else {
+                                res.status(404).json({ message: 'There was a problem updating password' });
+                            }
+                        })
 
-            })
-        }
+                })
+            
+            } else {
+                res.status(401).json({ message: 'password does not match' })
+            }
+        
+        
         if (errorFind) {
             return res.status(401).json({
                 msg: "Something Went Wrong",
@@ -135,7 +186,7 @@ router.post('/changePassword/:email', (req, res) => {
     })
 })
 
-router.put('/update/:id',auth, async (req, res) => {
+router.put('/update/:id', auth, async (req, res) => {
     const id = req.params.id;
     User.findById(id, function (err, user) {
         const isPasswordMatch = bcrypt.compare(req.body.currentPassword, user.password)
@@ -242,28 +293,28 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     //Login a registered user
     const { email, password } = req.body
-    
-        try {
-            const user = await User.findByCredentials(email, password)
-            if (!user) {
-                return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
-            }
-            const token = await user.generateAuthToken()
 
-            res.status(200).json({
-                message: 'Login Successful',
-                token: token,
-                user: user,
-               
-            })
-
-        } catch (err) {
-            res.status(500).json({
-                message: 'Login failed',
-                error: err
-            })
+    try {
+        const user = await User.findByCredentials(email, password)
+        if (!user) {
+            return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
         }
-   
+        const token = await user.generateAuthToken()
+
+        res.status(200).json({
+            message: 'Login Successful',
+            token: token,
+            user: user,
+
+        })
+
+    } catch (err) {
+        res.status(500).json({
+            message: 'Login failed',
+            error: err
+        })
+    }
+
 
 })
 
