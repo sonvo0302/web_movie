@@ -42,33 +42,35 @@ router.get('/',auth,async(req,res,next)=>{
     });
 })
 
-router.get('/averageR',async(req,res,next)=>{
-    Rating.aggregate(
-        [
-          {
-            $group:
-              {
-                _id: "$film",
-                avgRating: { $avg: "$numberofrating" }
-              }
-          }
-        ]
-     ).exec()
-     .then(result=>{
-            res.status(201).json({
-                ratings:result
-            })
-     })
-     .catch(err=>{
-         res.status(500).json({
-             error:err
-         })
-     })
+// router.get('/averageR',async(req,res,next)=>{
+//     Rating.aggregate(
+//         [
+//           {
+//             $group:
+//               {
+//                 _id: "$film",
+//                 avgRating: { $avg: "$numberofrating" }
+//               }
+//           }
+//         ]
+//      ).exec()
+//      .then(result=>{
+       
+//             res.status(201).json({
+//                 ratings:result
+//             })
+        
+//      })
+//      .catch(err=>{
+//          res.status(500).json({
+//              error:err
+//          })
+//      })
 
-})
+// })
 
 
-router.post('/',auth,async(req,res,next)=>{
+router.post('/film/:filmId',auth,async(req,res,next)=>{
     const {numberofrating} =req.body
     if(parseFloat(numberofrating) > 5){
         res.status(500).json({
@@ -80,7 +82,7 @@ router.post('/',auth,async(req,res,next)=>{
     const rating=new Rating({
         _id:new mongoose.Types.ObjectId(),
         user:loginId,
-        film:req.body.filmId,
+        film:req.params.filmId,
         numberofrating : req.body.numberofrating
     })
     rating

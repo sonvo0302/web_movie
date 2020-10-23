@@ -13,6 +13,7 @@ const FilmsController = require('../controllers/film');
 const db = mongoose.connection;
 const Comment = require('../models/comment');
 const Film_User_History = require('../models/film_user_history');
+const { resolveSoa } = require('dns');
 
 
 
@@ -62,21 +63,20 @@ router.get('/search', async (req, res, next) => {
             })
         })
 })
+//router.get('/filmMostWatched', (req, res) => res.render('films/filmMostWatched'));
+//router.get('/latestFilm', (req, res) => res.render('films/latestFilm'));
+router.get('/latestFilm',auth, async (req, res, next) => {
 
-router.get('/', auth, async (req, res, next) => {
-
-    Film.find().sort({ publishDate: 'desc' })
+    Film.find()
         .select('name publishDate description cast coverImageName' +
-            'director category linkTrailer create_at _id')
+             'director category linkTrailer create_at _id')
         .exec()
         .then(docs => {
-
             const respond = {
                 count: docs.length,
                 films: docs.map(doc => {
                     return {
                         name: doc.name,
-
                         publishDate: doc.publishDate,
                         description: doc.description,
                         create_at: doc.create_at,
@@ -94,13 +94,9 @@ router.get('/', auth, async (req, res, next) => {
                 }),
 
             }
-            //if(docs.length>=0){
+            
             res.status(200).json(respond)
-            // }else{
-            //     res.status(400).json({
-            //         message:'No entries found'
-            //     });
-            // }
+            
         })
         .catch(err => {
             console.log(err);
@@ -108,6 +104,35 @@ router.get('/', auth, async (req, res, next) => {
                 error: err
             });
         });
+});
+
+
+
+router.get('/filmMostWatched',auth, async (req, res, next) => {
+    Rating.aggregate([
+        { $unwind: "$film" },
+        {
+            $group: {
+                "_id": "$film",
+                "ratingAvg": { "$avg": "$numberofrating" },
+            }
+        },
+        {$sort:
+            {ratingAvg:-1}
+        },
+        {$limit: 10}
+    ], function (err, results) {
+        if (err) handleError(err);
+        Film.populate(results, { "path": "_id" }, function (err, result) {
+            if (err) handleError(err);
+            console.log(results);
+            res.status(200).json({
+                filmMostWatched:results 
+            });
+        });
+    
+    })   
+    
 });
 
 // function search(query) {
@@ -214,21 +239,6 @@ router.get('/:filmId', auth, async (req, res, next) => {
     const film = await Film.findById(id)
     const rating = await Rating.find({ film: film.id }).exec();
     const comment = await Comment.find({ film: film.id }).exec();
-    Rating.aggregate([
-        { $unwind: "$film" },
-        {
-            $group: {
-                "_id": "$film",
-                "ratingAvg": { "$avg": "$numberofrating" }
-            }
-        }
-    ], function (err, results) {
-        if (err) handleError(err);
-        Film.populate(results, { "path": "_id" }, function (err, result) {
-            if (err) handleError(err);
-            console.log(result);
-        });
-    })
     const loginId = req.user._id;
     console.log(loginId)
     const film_user_histories =await Film_User_History.find({film:film.id,user:loginId});

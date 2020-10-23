@@ -3,7 +3,7 @@ const User = require('../models/user')
 const auth = require('../middleware/auth')
 const router = express.Router()
 const User_Info = require('../models/user_info')
-const Film_User_History =require('../models/film_user_history')
+const Film_User_History = require('../models/film_user_history')
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs')
 const Rating = require('../models/rating')
@@ -45,8 +45,8 @@ router.get('/', auth, async (req, res, next) => {
         });
 })
 
-router.get('/reset', (req, res) => res.render('users/reset'));
-router.post('/reset', function (req, res) {
+router.get('/resetPassword', (req, res) => res.render('users/resetpassword'));
+router.post('/resetPassword', function (req, res) {
     User.findOne({ email: req.body.email }, function (error, userData) {
         if (!userData) {
             res.status(400).json({
@@ -77,7 +77,7 @@ router.post('/reset', function (req, res) {
             html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
-            <a href='http://localhost:3000/user/updatePassword/"+userData.email + "'>Click On This Link</a>\
+            <a href='http://localhost:3000/user/changePassword/"+ userData.email + "'>Click On This Link</a>\
             </p>"
         };
 
@@ -101,7 +101,7 @@ router.post('/reset', function (req, res) {
     })
 });
 
-router.post('/updatePassword/:email', (req, res) => {
+router.post('/changePassword/:email', (req, res) => {
     User.findOne({ email: req.params.email }, (errorFind, user) => {
         if (req.body.password == req.body.password2) {
             bcrypt.hash(req.body.password, 8, (err, hash) => {
@@ -135,61 +135,61 @@ router.post('/updatePassword/:email', (req, res) => {
     })
 })
 
-router.put('/update/:id', async(req, res) => {
-    const id= req.params.id;
+router.put('/update/:id', async (req, res) => {
+    const id = req.params.id;
     User.findById(id, function (err, user) {
-        const isPasswordMatch =  bcrypt.compare(req.body.currentPassword, user.password)
+        const isPasswordMatch = bcrypt.compare(req.body.currentPassword, user.password)
         if (isPasswordMatch) {
-                if (req.body.password) {
-                        bcrypt.hash(req.body.password, 8, (err, hash) => {
-                            if (err) throw err;
-                            const hasedPassword = hash;
-                            const condition = { _id: id };
-                            const dataForUpdate = { name: req.body.name, email: req.body.email, password: hasedPassword, updatedDate: Date.now().toString()};
-                            User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                            .then(result=>{
-                                if (result) {
-                                    res.status(200).json({
-                                        user: result,
-                                        request: {
-                                            type: 'GET',
-                                            url: 'http://localhost:3000/user/' + result._id
-                                        }
-                                    });
-                                } else {
-                                    res.status(404).json({ message: 'There was a problem updating user' });
-                                }
-                            })
-                        })
-                    }
-                    
-                else {
-                    let condition = { _id: id};
-                    let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
+            if (req.body.password) {
+                bcrypt.hash(req.body.password, 8, (err, hash) => {
+                    if (err) throw err;
+                    const hasedPassword = hash;
+                    const condition = { _id: id };
+                    const dataForUpdate = { name: req.body.name, email: req.body.email, password: hasedPassword, updatedDate: Date.now().toString() };
                     User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                            .then(result=>{
-                                if (result) {
-                                    res.status(200).json({
-                                        user: result,
-                                        request: {
-                                            type: 'GET',
-                                            url: 'http://localhost:3000/user/' + result._id
-                                        }
-                                    });
-                                } else {
-                                    res.status(404).json({ message: 'There was a problem updating user' });
+                        .then(result => {
+                            if (result) {
+                                res.status(200).json({
+                                    user: result,
+                                    request: {
+                                        type: 'GET',
+                                        url: 'http://localhost:3000/user/' + result._id
+                                    }
+                                });
+                            } else {
+                                res.status(404).json({ message: 'There was a problem updating user' });
+                            }
+                        })
+                })
+            }
+
+            else {
+                let condition = { _id: id };
+                let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
+                User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                    .then(result => {
+                        if (result) {
+                            res.status(200).json({
+                                user: result,
+                                request: {
+                                    type: 'GET',
+                                    url: 'http://localhost:3000/user/' + result._id
                                 }
-                            })
-                
+                            });
+                        } else {
+                            res.status(404).json({ message: 'There was a problem updating user' });
+                        }
+                    })
+
             }
-            } else {
-                return res.status(401).json({
-                    msg: "Incorrect password.",
-                    success: false
-                });
-            }
-        })
-    });
+        } else {
+            return res.status(401).json({
+                msg: "Incorrect password.",
+                success: false
+            });
+        }
+    })
+});
 
 
 
@@ -240,28 +240,29 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     //Login a registered user
+    const { email, password } = req.body
+    
+        try {
+            const user = await User.findByCredentials(email, password)
+            if (!user) {
+                return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
+            }
+            const token = await user.generateAuthToken()
 
-    try {
-        const { email, password } = req.body
-        const user = await User.findByCredentials(email, password)
-        if (!user) {
-            return res.status(401).send({ error: 'Login failed! Check authentication credentials' })
+
+            res.status(200).json({
+                message: 'Login Successful',
+                user: user,
+                token: token
+            })
+
+        } catch (err) {
+            res.status(500).json({
+                message: 'Login failed',
+                error: err
+            })
         }
-       
-        const token = await user.generateAuthToken()
-        
-
-        res.status(200).json({
-            message: 'Login Successful',
-            user: user,
-            token: token
-        })
-    } catch (err) {
-        res.status(500).json({
-            message: 'Login failed',
-            error: err
-        })
-    }
+   
 
 })
 
@@ -274,14 +275,14 @@ router.get('/me', auth, async (req, res) => {
     }
 
 })
-router.get('/:userId',auth, async (req, res, next) => {
+router.get('/userInfo/:userId', auth, async (req, res, next) => {
     const loginId = req.user._id;
     const id = req.params.userId;
-    if(loginId == id){
+    if (loginId == id) {
         const user = await User.findById(id)
         const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
-        const user_histories =await Film_User_History.find({user:user.id}).exec();
-        const user_rating = await Rating.find({user:user.id}).exec();
+        const user_histories = await Film_User_History.find({ user: user.id }).exec();
+        const user_rating = await Rating.find({ user: user.id }).exec();
         await User.findById(id)
             .select('email password _id')
             .exec()
@@ -291,8 +292,8 @@ router.get('/:userId',auth, async (req, res, next) => {
                     res.status(200).json({
                         user: doc,
                         user_info: user_info,
-                        film_user_histories : user_histories,
-                        user_rating:user_rating,
+                        //film_user_histories: user_histories,
+                        //user_rating: user_rating,
                         request: {
                             type: 'GET',
                             url: 'http://localhost:3000/user'
@@ -306,10 +307,85 @@ router.get('/:userId',auth, async (req, res, next) => {
                 console.log(err);
                 res.status(500).json({ error: err });
             });
-    }else{
-        res.status(500).json({message:'ID does not match'})
+    } else {
+        res.status(500).json({ message: 'ID does not match' })
     }
 })
+
+router.get('/filmUserHistory/:userId', auth, async (req, res, next) => {
+    const loginId = req.user._id;
+    const id = req.params.userId;
+    if (loginId == id) {
+        const user = await User.findById(id)
+        const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
+        const user_histories = await Film_User_History.find({ user: user.id }).exec();
+        const user_rating = await Rating.find({ user: user.id }).exec();
+        await User.findById(id)
+            .select('email password _id')
+            .exec()
+            .then(doc => {
+                console.log("From database", doc)
+                if (doc) {
+                    res.status(200).json({
+                        user: doc,
+                        //user_info: user_info,
+                        film_user_histories: user_histories,
+                        //user_rating: user_rating,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:3000/user'
+                        }
+                    });
+                } else {
+                    res.status(404).json({ message: 'No valid entry found for ID' });
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                res.status(500).json({ error: err });
+            });
+    } else {
+        res.status(500).json({ message: 'ID does not match' })
+    }
+})
+
+router.get('/userRatingHistory/:userId', auth, async (req, res, next) => {
+    const loginId = req.user._id;
+    const id = req.params.userId;
+    if (loginId == id) {
+        const user = await User.findById(id)
+        const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
+        const user_histories = await Film_User_History.find({ user: user.id }).exec();
+        const user_rating = await Rating.find({ user: user.id }).exec();
+        await User.findById(id)
+            .select('email password _id')
+            .exec()
+            .then(doc => {
+                console.log("From database", doc)
+                if (doc) {
+                    res.status(200).json({
+                        user: doc,
+                        //user_info: user_info,
+                        //film_user_histories: user_histories,
+                        user_rating: user_rating,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:3000/user'
+                        }
+                    });
+                } else {
+                    res.status(404).json({ message: 'No valid entry found for ID' });
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                res.status(500).json({ error: err });
+            });
+    } else {
+        res.status(500).json({ message: 'ID does not match' })
+    }
+})
+
 
 
 router.post('/me/logout', auth, async (req, res) => {
