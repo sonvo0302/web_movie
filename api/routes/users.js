@@ -76,7 +76,7 @@ router.get('/all', auth, async (req, res, next) => {
 })
 
 
-router.post('/password/reset',async (req, res)=> {
+router.post('/password/reset', async (req, res) => {
     User.findOne({ email: req.body.email }, function (error, userData) {
         if (!userData) {
             res.status(400).json({
@@ -84,9 +84,9 @@ router.post('/password/reset',async (req, res)=> {
             })
         }
         const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
-        userData.resetToken=resetToken
+        userData.resetToken = resetToken
         userData.save()
-       
+
 
         var transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
@@ -110,7 +110,7 @@ router.post('/password/reset',async (req, res)=> {
 
         });
 
-        
+
         // const condition = ({_id:userData._id })
         // const dataForUpdate = { resetToken: resetToken}
         // User.findOneAndUpdate(condition,dataForUpdate,{ new: true }).exec();
@@ -123,13 +123,13 @@ router.post('/password/reset',async (req, res)=> {
             html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
-            <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' +userData.resetToken+ "'>Click On This Link</a>\
+            <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' + userData.resetToken + "'>Click On This Link</a>\
             </p>"
         };
         //console.log(resetToken)
-    
 
-        transporter.sendMail(mailOptions,async function (error, info) {
+
+        transporter.sendMail(mailOptions, async function (error, info) {
             if (error) {
                 console.log(error);
             } else {
@@ -146,7 +146,7 @@ router.post('/password/reset',async (req, res)=> {
                 })
             }
         });
-    
+
     })
 
 
@@ -157,44 +157,44 @@ router.post('/password/change', (req, res) => {
     const token_reset = req.query.resetToken
     console.log(token_reset)
     // const token_reset = jwt.verify(reset,process.env.RESET_KEY)
-   
+
     User.findOne({ email: email_reset, resetToken: token_reset }, (errorFind, user) => {
         bcrypt.compare(req.body.password, user.password).then(isMatch => {
-            if(isMatch){
-                res.status(401).json({message:'new password like your old password'})
-            }else
-        if(req.body.password.length <8){
-            res.status(401).json({message:'Password must be 8 characters or more'})
-        }else
-            if (req.body.password == req.body.password2) {
-                bcrypt.hash(req.body.password, 8, (err, hash) => {
-                    if (err) throw err;
-                    const newPassword = hash;
-                    const condition = ({_id:user._id })
-                    const dataForUpdate = { password: newPassword,resetToken:token_reset, updatedDate: Date.now().toString() }
-                    User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                        .then(result => {
-                            if (result) {
-                                res.status(200).json({
-                                    user: result,
-                                    request: {
-                                        type: 'GET',
-                                        url: 'http://localhost:3000/user/' + result._id
+            if (isMatch) {
+                res.status(401).json({ message: 'new password like your old password' })
+            } else
+                if (req.body.password.length < 8) {
+                    res.status(401).json({ message: 'Password must be 8 characters or more' })
+                } else
+                    if (req.body.password == req.body.password2) {
+                        bcrypt.hash(req.body.password, 8, (err, hash) => {
+                            if (err) throw err;
+                            const newPassword = hash;
+                            const condition = ({ _id: user._id })
+                            const dataForUpdate = { password: newPassword, resetToken: token_reset, updatedDate: Date.now().toString() }
+                            User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                                .then(result => {
+                                    if (result) {
+                                        res.status(200).json({
+                                            user: result,
+                                            request: {
+                                                type: 'GET',
+                                                url: 'http://localhost:3000/user/' + result._id
+                                            }
+                                        });
+                                    } else {
+                                        res.status(404).json({ message: 'There was a problem updating password' });
                                     }
-                                });
-                            } else {
-                                res.status(404).json({ message: 'There was a problem updating password' });
-                            }
+                                })
+
                         })
 
-                })
-            
-            } else {
-                res.status(401).json({ message: 'password does not match' })
-            }
-        
+                    } else {
+                        res.status(401).json({ message: 'password does not match' })
+                    }
+
         })
-        
+
         if (errorFind) {
             return res.status(401).json({
                 msg: "Something Went Wrong",
@@ -317,8 +317,8 @@ router.post('/login', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
         }
-       
-        user.resetToken = null
+
+        //user.resetToken = null
         const token = await user.generateAuthToken()
         res.status(200).json({
             message: 'Login Successful',
