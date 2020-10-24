@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken')
 
 
 
+
 // router.post('/send', function(req, res, next) {
 //     var transporter =  nodemailer.createTransport({ // config mail server
 //         service: 'Gmail',
@@ -75,18 +76,23 @@ router.get('/all', auth, async (req, res, next) => {
 })
 
 
-router.post('/password/reset', function (req, res) {
+router.post('/password/reset',async (req, res)=> {
     User.findOne({ email: req.body.email }, function (error, userData) {
         if (!userData) {
             res.status(400).json({
                 mg: 'Email not exists'
             })
         }
+        const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
+        userData.resetToken=resetToken
+        userData.save()
+       
 
         var transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 465,
             secure: true,
+            service: 'Gmail',
             auth: {
                 user: 'sonvo0302@gmail.com', //Tài khoản gmail vừa tạo
                 pass: 'Sonngao2512' //Mật khẩu tài khoản gmail vừa tạo
@@ -103,10 +109,12 @@ router.post('/password/reset', function (req, res) {
             // }
 
         });
-        const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
-        userData.resetToken = resetToken;
-        userData.save()
-        var currentDateTime = new Date();
+
+        
+        // const condition = ({_id:userData._id })
+        // const dataForUpdate = { resetToken: resetToken}
+        // User.findOneAndUpdate(condition,dataForUpdate,{ new: true }).exec();
+        //var currentDateTime = new Date();
         var mailOptions = {
             from: 'sonvo0302@gmail.com',
             to: req.body.email,
@@ -115,18 +123,19 @@ router.post('/password/reset', function (req, res) {
             html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
-            <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' + userData.resetToken + "'>Click On This Link</a>\
+            <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' +userData.resetToken+ "'>Click On This Link</a>\
             </p>"
         };
-        console.log(userData.resetToken)
+        //console.log(resetToken)
+    
 
-        transporter.sendMail(mailOptions, function (error, info) {
+        transporter.sendMail(mailOptions,async function (error, info) {
             if (error) {
                 console.log(error);
             } else {
                 console.log('Email sent: ' + info.response);
-                User.updateOne({ email: userData.email }, {
-                    resetToken: resetToken,
+                await User.updateOne({ email: userData.email }, {
+                    resetToken: userData.resetToken,
 
                 }, { multi: true }, function (err, affected, resp) {
                     return res.status(200).json({
@@ -137,15 +146,23 @@ router.post('/password/reset', function (req, res) {
                 })
             }
         });
+    
     })
+
+
 });
 
 router.post('/password/change', (req, res) => {
-    const reset = req.query.resetToken
-    //const token_reset = jwt.verify(reset,process.env.RESET_KEY)
     const email_reset = req.query.email
+    const token_reset = req.query.resetToken
+    console.log(token_reset)
+    // const token_reset = jwt.verify(reset,process.env.RESET_KEY)
    
-    User.findOne({ email: email_reset, resetToken: reset }, (errorFind, user) => {
+    User.findOne({ email: email_reset, resetToken: token_reset }, (errorFind, user) => {
+        bcrypt.compare(req.body.password, user.password).then(isMatch => {
+            if(isMatch){
+                res.status(401).json({message:'new password like your old password'})
+            }else
         if(req.body.password.length <8){
             res.status(401).json({message:'Password must be 8 characters or more'})
         }else
@@ -153,8 +170,8 @@ router.post('/password/change', (req, res) => {
                 bcrypt.hash(req.body.password, 8, (err, hash) => {
                     if (err) throw err;
                     const newPassword = hash;
-                    const condition = ({ _id: user._id })
-                    const dataForUpdate = { password: newPassword, updatedDate: Date.now().toString() }
+                    const condition = ({_id:user._id })
+                    const dataForUpdate = { password: newPassword,resetToken:token_reset, updatedDate: Date.now().toString() }
                     User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
                         .then(result => {
                             if (result) {
@@ -176,6 +193,7 @@ router.post('/password/change', (req, res) => {
                 res.status(401).json({ message: 'password does not match' })
             }
         
+        })
         
         if (errorFind) {
             return res.status(401).json({
@@ -299,8 +317,9 @@ router.post('/login', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
         }
+       
+        user.resetToken = null
         const token = await user.generateAuthToken()
-
         res.status(200).json({
             message: 'Login Successful',
             token: token,
