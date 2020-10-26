@@ -161,7 +161,7 @@ router.get('/all', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
     .select('name publishDate description cast coverImageName' +
-        'director category linkTrailer create_at _id viewFilm').limit(10).skip(2)
+        'director category linkTrailer create_at _id viewFilm').limit(10)
     .exec()
     .then(docs => {
         const respond = {
