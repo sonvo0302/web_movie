@@ -40,12 +40,14 @@ router.get('/all',auth,(req,res)=>{
     });
 
 })
-router.get('/:filmId', auth, async (req, res, next) => {
-    const id = req.params.filmId;
-    const film_user_history = await Film_User_History.findById(id)   
-        Film_User_History.findById(id)
+router.get('/user', auth, async (req, res, next) => {
+    const id = req.query.userId;
+    const loginId = req.user._id
+    if(id==loginId){
+    const film_user_history = await Film_User_History.findOne({user:id})   
+        Film_User_History.find({user:id})
             .select('_id user film ')
-            .populate('user film ')
+            .populate(' film ')
             .exec()
             .then(doc => {
                 //console.log("From database",doc)
@@ -54,7 +56,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
                         film_user_history: doc,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/film_user_history'
+                            url: 'http://localhost:3000/film_user_history/'
                         }
                     });
                 } else {
@@ -65,7 +67,11 @@ router.get('/:filmId', auth, async (req, res, next) => {
                 console.log(err);
                 res.status(500).json({ error: err });
             });
-
+        }else{
+            res.status(500).json({
+                message:'ID does not match'
+            })
+        }
 })
 
 

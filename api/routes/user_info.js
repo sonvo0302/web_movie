@@ -46,65 +46,105 @@ router.get('/all', auth, async (req, res, next) => {
 })
 
 
-router.post('/new', auth, async (req, res, next) => {
-    const { mobile_phone } = req.body
-    const loginId = req.user._id;
-    const user_info = await User_Info.find({ user: loginId }).exec()
-    console.log(req.user._id);
-    if (user_info.length == '') {
-        if (mobile_phone.length == 10) {
-            const user_info = new User_Info({
-                _id: new mongoose.Types.ObjectId(),
-                name: req.user.name,
-                dateofbirth: new Date(req.body.dateofbirth),
-                mobile_phone: req.body.mobile_phone,
-                gender: req.body.gender,
-                user:loginId
-            })
-            user_info
-                .save()
-                .then(result => {
-                    console.log(result);
-                    res.status(200).json({
-                        message: "Created user info successfully",
-                        createdUserInfo: {
-                            name: result.name,
-                            gender: result.gender,
-                            dateofbirth: result.dateofbirth,
-                            mobile_phone: result.mobile_phone,
-                            create_at: result.create_at,
-                            user:result.user,
-                            _id: result._id,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:3000/user_info/' + result._id
-                            }
-                        }
+router.post('/update', auth, async (req, res, next) => {
+    // const { mobile_phone } = req.body
+    // const userId = req.query.userId;
+    // const loginId = req.user._id;
+    // //if(loginId == userId){
+    // //console.log(req.user._id);
+    //     if (mobile_phone.length == 10) {
+    //         let user_info;
+    //         user_info = await User_Info.find({ user: userId });
+    //         user_info.name= req.body.name,
+    //         user_info.dateofbirth= new Date(req.body.dateofbirth),
+    //         user_info.mobile_phone= req.body.mobile_phone,
+    //         user_info.gender= req.body.gender
 
+    //         user_info.save();
+
+            // user_info
+            //     .save()
+            //     .then(result => {
+            //         console.log(result);
+            //         res.status(200).json({
+            //             message: "Update user info successfully",
+            //             createdUserInfo: {
+            //                 name: result.name,
+            //                 gender: result.gender,
+            //                 dateofbirth: result.dateofbirth,
+            //                 mobile_phone: result.mobile_phone,
+            //                 create_at: result.create_at,
+            //                 user:result.user,
+            //                 _id: result._id,
+            //                 request: {
+            //                     type: 'GET',
+            //                     url: 'http://localhost:3000/user_info/' + result._id
+            //                 }
+            //             }
+
+            //         });
+            //     })
+            //     .catch(err => {
+            //         console.log(err);
+            //         res.status(500).json({
+            //             error: err
+            //         })
+            //     });
+                // let user;
+                // user = await User.findById({_id:userId}).exec();
+                // user.name = req.body.name;
+                // user.save()
+        // } else {
+        //     res.status(500).json({
+        //         message: 'Mobile phone must be less than 11 & at least 10 numbers'
+        //     })
+        // }
+    // }
+    // else{
+    //     res.status(500).json({
+    //         message:'Login Failed'
+    //     })
+    // }
+    if (req.body.mobile_phone.length == 10) {
+        const data = { name: req.body.name }
+        const userId =req.query.userId
+        User_Info.findOne({user:userId},async function(err,user_info){
+            let user;
+            user = await User.findById(userId)
+            user.name = req.body.name;
+            await user.save();
+            const condition=({_id:user_info._id})
+            User_Info.findByIdAndUpdate(condition, req.body, { new: true }).exec()
+            .then(result => {
+                if (result) {
+                    res.status(200).json({
+                        user_info: result,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:3000/user_info/' + result._id
+                        }
                     });
-                })
-                .catch(err => {
-                    console.log(err);
-                    res.status(500).json({
-                        error: err
-                    })
-                });
-        } else {
-            res.status(500).json({
-                message: 'Mobile phone must be less than 11 & at least 10 numbers'
+                } else {
+                    res.status(404).json({ message: 'There was a problem updating the user' });
+                }
             })
-        }
+        })
+        const user_info = await User_Info.findById(user_infoId)
+       // console.log(user_infoId);
     } else {
-        res.status(500).json({
-            message: 'user info exist'
+        res.status(401).json({
+            message: 'Mobile must be less than 11 and at least 10 numbers'
         })
     }
+   
 })
 
 
-router.get('/:userinfoId', auth, (req, res, next) => {
-    const id = req.params.userinfoId;
-    User_Info.findById(id)
+router.get('/user', auth, (req, res, next) => {
+    const id = req.query.userId;
+    const loginId= req.user._id;
+    if(id==loginId){
+        User_Info.findOne({user:id})
         .select('name gender dateofbirth user mobile_phone  _id ')
         .populate('user')
         .then(result => {
@@ -114,7 +154,7 @@ router.get('/:userinfoId', auth, (req, res, next) => {
                     user_info: result,
                     request: {
                         type: 'GET',
-                        url: 'http://localhost:3000/user_info'
+                        url: 'http://localhost:3000/user_info/'
                     }
                 });
             } else {
@@ -126,6 +166,11 @@ router.get('/:userinfoId', auth, (req, res, next) => {
                 error: err
             })
         })
+    }else{
+        res.status(500).json({
+            message:'ID does not match'
+        })
+    }
 })
 
 router.delete('/:userinfoId', function (req, res) {

@@ -19,6 +19,7 @@ const director = require('../models/director');
 
 
 
+
 const uploadPath = path.join('public', Film.coverImageBasePath)
 
 
@@ -29,6 +30,8 @@ const upload = multer({
         callback(null, imageMimeTypes.includes(file.mimetype))
     }
 })
+
+
 // const storage = multer.diskStorage({
 //     destination: function(req, file, cb) {
 //       cb(null, './uploads/');
@@ -197,43 +200,20 @@ router.get('/all', auth, async (req, res, next) => {
 
 });
 
-// function search(query) {
-//     return function(element) {
-//       for(var i in query) {
-//         if(query[i] != element[i]) {
-//           return false;
-//         }
-//       }
-//       return true;
-//     }
-//   }
 
-//   exports.search = function(query) {
-//     return films.filter(search(query));
-// }
+// router.get('/new1',(req,res)=>{
+//     res.render('films/new1')
+// })
 
 router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
-    // const {rating} =req.body
-    // if(parseFloat(rating) > 5){
-    //     res.status(500).json({
-    //         message:'Rating must be less than or as 5'
-    //     })
-    // }else{
-    // Category.findById(req.body.categoryId)
-    // .then(category=>{
-    //     if(!category){
-    //         res.status(404).json({
-    //             message:'Category not found'
-    //         })
-    //     }
-    //     Director.findById(req.body.directorId)
-    //     .then(director=>{
-    //         if(!director){
-    //             res.status(404).json({
-    //                 message:'Director not found'
-    //             })
-    //         }
+    const {rating} =req.body
+    if(parseFloat(rating) > 5){
+        res.status(500).json({
+            message:'Rating must be less than or as 5'
+        })
+    }else{
     const fileName = req.file != null ? req.file.filename : null
+  
     const film = new Film({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
@@ -275,23 +255,8 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
                 error: err
             })
         })
-    //     })
-    //     .catch(err=>{
-    //         res.status(500).json({
-    //             message:'Director not found',
-    //             error:err
-    //         })
-    //     })
 
-    // })
-    // .catch(err=>{
-    //     res.status(500).json({
-    //         message:'Category not found',
-    //         error:err
-    //     })
-    // })
-
-    // }
+    }
 })
 
 
@@ -409,7 +374,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
 
 })
 
-router.put('/:filmId', auth, upload.single('coverImageName'), async (req, res, next) => {
+router.put('/edit/:filmId', auth, upload.single('coverImageName'), async (req, res, next) => {
     // const id =req.params.filmId
     // const updateOps={};
     // for(const ops of req.body){
@@ -464,7 +429,7 @@ router.put('/:filmId', auth, upload.single('coverImageName'), async (req, res, n
                     avg = total / rating.length;
                 }
                 res.status(200).json({
-                    message: "Created film successfully",
+                    message: "Update film successfully",
                     createdFilm: {
                         name: result.name,
                         publishDate: result.publishDate,
@@ -499,7 +464,7 @@ router.put('/:filmId', auth, upload.single('coverImageName'), async (req, res, n
 
 });
 
-router.delete('/:filmId', (req, res, next) => {
+router.delete('/delete/:filmId', (req, res, next) => {
     const id = req.params.filmId;
     Film.remove({ _id: id })
         .exec()
@@ -508,7 +473,7 @@ router.delete('/:filmId', (req, res, next) => {
                 message: 'Film Deleted',
                 request: {
                     type: 'POST',
-                    url: 'http://localhost:3000/film',
+                    url: 'http://localhost:3000/film/',
                     body: {
                         name: 'String',
                         rating: 'Number',

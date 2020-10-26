@@ -8,6 +8,7 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs')
 const Rating = require('../models/rating')
 const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
 
 
 
@@ -276,7 +277,7 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ msg: 'Passwords do not match' });
         }
 
-        if (password.length < 6) {
+        if (password.length < 8) {
             return res.status(400).json({ msg: 'Password must be at least 6 characters' });
         }
 
@@ -288,6 +289,15 @@ router.post('/register', async (req, res) => {
         }
         const user = new User(req.body)
         await user.save()
+        const user_info =new User_Info({
+            _id: new mongoose.Types.ObjectId(),
+            name: req.body.name,
+            dateofbirth: null,
+            mobile_phone: null,
+            gender: null,
+            user:user._id   
+        })
+        await user_info.save()
         const token = await user.generateAuthToken()
         res.status(200).json({
             message: 'Register Successful',
@@ -311,11 +321,15 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     //Login a registered user
     const { email, password } = req.body
+    const users = await User.findOne({ email: email })
 
+    if (!users) {
+        return res.status(401).json({ error: 'Login failed! Email does not exist ' })
+    }
     try {
         const user = await User.findByCredentials(email, password)
-        if (!user) {
-            return res.status(401).json({ error: 'Login failed! Check authentication credentials' })
+        if(!user){
+            res.status(401).json({message:'Check Credentials Failed'})
         }
 
         //user.resetToken = null
@@ -326,10 +340,10 @@ router.post('/login', async (req, res) => {
             user: user,
 
         })
-
+    
     } catch (err) {
         res.status(500).json({
-            message: 'Login failed',
+            message: 'Login failed! Password Invalid',
             error: err
         })
     }
