@@ -13,7 +13,6 @@ const FilmsController = require('../controllers/film');
 const db = mongoose.connection;
 const Comment = require('../models/comment');
 const Film_User_History = require('../models/film_user_history');
-const { resolveSoa } = require('dns');
 const category = require('../models/category');
 const director = require('../models/director');
 
@@ -204,28 +203,38 @@ router.get('/all', auth, async (req, res, next) => {
 // router.get('/new1',(req,res)=>{
 //     res.render('films/new1')
 // })
-function saveCover(film, coverEncoded) {
-    if (coverEncoded == null) return
-    const cover = JSON.parse(coverEncoded)
-    if (cover != null && imageMineType.includes(cover.type)) {
-        film.coverImageName = new Buffer.from(cover.data, 'base64');
-        film.imgType = cover.type;
-    }
+function base64_encode(file) {
+    // read binary data
+    var bitmap = fs.readFileSync(file);
+    // convert binary data to base64 encoded string
+    return new Buffer(bitmap).toString('base64');
 }
-router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
+
+// function to create file from base64 encoded string
+function base64_decode(base64str, file) {
+    // create buffer object from base64 encoded string, it is important to tell the constructor that the string is base64 encoded
+    var bitmap = new Buffer(base64str, 'base64');
+    // write buffer to file
+    fs.writeFileSync(file, bitmap);
+    console.log('******** File created from base64 encoded string ********');
+}
+
+router.post('/new', auth, async (req, res, next) => {
     const {rating} =req.body
     if(parseFloat(rating) > 5){
         res.status(500).json({
             message:'Rating must be less than or as 5'
         })
     }else{
+
     const fileName = req.file != null ? req.file.filename : null
-  
+    var base64str = base64_encode(fileName);
+
     const film = new Film({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        coverImageName: new Buffer.from(fileName, 'base64'),
-        //imgType:req.body.coverImageName.type,
+        coverImageName: base64str,
+        //imgType : coverImageName.type,
         //rating :req.body.rating,
         publishDate: req.body.publishDate,
         description: req.body.description,
@@ -233,9 +242,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
         cast: req.body.cast,
         category: req.body.categoryId,
         director: req.body.directorId
-        
     })
-    
     film.save()
         .then(result => {
             res.status(200).json({
@@ -248,7 +255,6 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
                     create_at: result.create_at,
                     cast: result.cast,
                     coverImageName: result.coverImageName,
-        
                     director: result.director,
                     category: result.category,
                     linkTrailer: result.linkTrailer,
@@ -259,53 +265,35 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
                     }
                 }
 
-
             });
-            
         })
         .catch(err => {
             res.status(500).json({
                 error: err
             })
         })
+    
 
     }
 })
 
 
 
-// function base64_encode(file) {
-//     // read binary data
-//     var bitmap = fs.readFileSync(file);
-//     // convert binary data to base64 encoded string
-//     return new Buffer(bitmap).toString('base64');
-// }
 
-// // function to create file from base64 encoded string
-// function base64_decode(base64str, file) {
-//     // create buffer object from base64 encoded string, it is important to tell the constructor that the string is base64 encoded
-//     var bitmap = new Buffer(base64str, 'base64');
-//     // write buffer to file
-//     fs.writeFileSync(file, bitmap);
-//     console.log('******** File created from base64 encoded string ********');
-// }
 
-// router.post('/new', auth, async (req, res, next) => {
+// router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
 //     const {rating} =req.body
 //     if(parseFloat(rating) > 5){
 //         res.status(500).json({
 //             message:'Rating must be less than or as 5'
 //         })
 //     }else{
-
 //     const fileName = req.file != null ? req.file.filename : null
-//     var base64str = base64_encode(fileName);
-
+  
 //     const film = new Film({
 //         _id: new mongoose.Types.ObjectId(),
 //         name: req.body.name,
-//         coverImageName: base64str,
-//         //imgType : coverImageName.type,
+//         coverImageName: fileName,
 //         //rating :req.body.rating,
 //         publishDate: req.body.publishDate,
 //         description: req.body.description,
@@ -343,13 +331,9 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
 //                 error: err
 //             })
 //         })
-    
 
 //     }
 // })
-
-
-
 
 
 

@@ -208,10 +208,9 @@ router.post('/password/change', (req, res) => {
 router.put('/update/:id', auth, async (req, res) => {
     const id = req.params.id;
     User.findById(id, function (err, user) {
-        const isPasswordMatch = bcrypt.compare(req.body.currentPassword, user.password)
-        if (isPasswordMatch) {
-            if (req.body.password) {
-                bcrypt.hash(req.body.password, 8, (err, hash) => {
+        bcrypt.compare(req.body.currentPassword, user.password,(err,isMatch)=>{
+            if (isMatch) {
+                bcrypt.hash(req.body.new_password, 8, (err, hash) => {
                     if (err) throw err;
                     const hasedPassword = hash;
                     const condition = { _id: id };
@@ -231,33 +230,36 @@ router.put('/update/:id', auth, async (req, res) => {
                             }
                         })
                 })
-            }
-
-            else {
-                let condition = { _id: id };
-                let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
-                User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                    .then(result => {
-                        if (result) {
-                            res.status(200).json({
-                                user: result,
-                                request: {
-                                    type: 'GET',
-                                    url: 'http://localhost:3000/user/' + result._id
-                                }
-                            });
-                        } else {
-                            res.status(404).json({ message: 'There was a problem updating user' });
-                        }
-                    })
-
-            }
         } else {
-            return res.status(401).json({
-                msg: "Incorrect password.",
-                success: false
-            });
+            let condition = { _id: id };
+            let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
+            User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                .then(result => {
+                    if (result) {
+                        res.status(200).json({
+                            message:'Current Password Incorrect, No update password',
+                            user: result,
+                            request: {
+                                type: 'GET',
+                                url: 'http://localhost:3000/user/' + result._id
+                            }
+                        });
+                    } else {
+                        res.status(404).json({ message: 'There was a problem updating user' });
+                    }
+                })
+
         }
+        })
+       
+
+           
+        // } else {
+        //     return res.status(401).json({
+        //         msg: "Incorrect password.",
+        //         success: false
+        //     });
+        // }
     })
 
 });
