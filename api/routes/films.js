@@ -213,12 +213,12 @@ function saveCover(film, coverEncoded) {
     }
 }
 router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
-    const {rating} =req.body
-    if(parseFloat(rating) > 5){
-        res.status(500).json({
-            message:'Rating must be less than or as 5'
-        })
-    }else{
+    // const {rating} =req.body
+    // if(parseFloat(rating) > 5){
+    //     res.status(500).json({
+    //         message:'Rating must be less than or as 5'
+    //     })
+    // }else{
     const fileName = req.file != null ? req.file.filename : null
   
     const film = new Film({
@@ -269,7 +269,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
             })
         })
 
-    }
+   // }
 })
 
 

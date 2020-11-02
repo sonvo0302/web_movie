@@ -362,9 +362,9 @@ router.get('/me', auth, async (req, res) => {
     }
 
 })
-router.get('/info/:userId', auth, async (req, res, next) => {
+router.get('/info/', auth, async (req, res, next) => {
     const loginId = req.user._id;
-    const id = req.params.userId;
+    const id = req.query.userId;
     if (loginId == id) {
         const user = await User.findById(id)
         const user_info = await User_Info.find({ user: user.id }).limit(6).exec()

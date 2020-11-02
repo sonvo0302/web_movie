@@ -18,7 +18,7 @@ app.use(express.static('public'));
 
 const filmRoutes=require('./api/routes/films');
 const categoryRoutes =require('./api/routes/categories');
-const filmcategoryRoutes =require('./api/routes/film_category');
+//const filmcategoryRoutes =require('./api/routes/film_category');
 // const userRoutes = require('./api/routes/user');
 const directorRouter = require('./api/routes/directors');
 const userinfoRouter=require('./api/routes/user_info');
@@ -62,7 +62,7 @@ const adminRoutes =require('./api/routes/admin');
 //Routes which should handle requests
 app.use('/film',filmRoutes);
 app.use('/category',categoryRoutes);
-app.use('/film_category',filmcategoryRoutes);
+// app.use('/film_category',filmcategoryRoutes);
 
 app.use('/user',usersRoutes);
 app.use('/director',directorRouter);
