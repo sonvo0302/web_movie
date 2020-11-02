@@ -8,7 +8,7 @@ const Category =require('../models/category');
 const Film=require('../models/film');
 
 //Handling incoming GET requests to /categories
-router.get('/all',auth,async(req,res,next)=>{
+router.get('/',auth,async(req,res,next)=>{
     await Category.find()
     .select('name _id')
     .exec()
@@ -21,7 +21,7 @@ router.get('/all',auth,async(req,res,next)=>{
                     _id:doc._id,
                     request:{
                         type:'GET',
-                        url:'http://localhost:3000/categories/'+doc._id
+                        url:'http://localhost:4000/categories/'+doc._id
                     }
                 }
             })
@@ -72,8 +72,8 @@ router.post('/new',(req,res,next)=>{
     });
 })
 
-router.get('/:categoryId',async(req,res,next)=>{    
-    const id = req.params.categoryId;
+router.get('/:category_id',async(req,res,next)=>{    
+    const id = req.params.category_id;
     const categories =await  Category.findById(id)
     const films =await  Film.find({ category: categories.id }).limit(6).exec()
     await Category.findById(id)

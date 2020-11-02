@@ -25,34 +25,12 @@ const uploadPath = path.join('public', Film.coverImageBasePath)
 
 const imageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'images/gif']
 const upload = multer({
-    dest: uploadPath,
-    fileFilter: (req, file, callback) => {
-        callback(null, imageMimeTypes.includes(file.mimetype))
-    }
+    // dest: uploadPath,
+    // fileFilter: (req, file, callback) => {
+    //     callback(null, imageMimeTypes.includes(file.mimetype))
+    // }
+
 })
-
-
-// const storage = multer.diskStorage({
-//     destination: function(req, file, cb) {
-//       cb(null, './uploads/');
-//     },
-//     filename: function(req, file, cb) {
-//       cb(null, file.originalname);
-//     }
-//   });
-
-
-//   const upload = multer({
-//     storage: storage,
-//     limits: {
-//       fileSize: 1024 * 1024 * 5
-//     },
-//     fileFilter: (req, file, callback) => {
-//             callback(null, imageMimeTypes.includes(file.mimetype))
-//           }
-//   });
-
-
 
 
 
@@ -74,8 +52,7 @@ router.get('/lastest', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
 
     Film.find({ name: regex })
-        .select('name publishDate description cast coverImageName' +
-            'director category linkTrailer create_at _id viewFilm').sort({ publishDate: 'desc' }).limit(10).skip(2)
+        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ publishDate: 'desc' }).limit(10).skip(2)
         .exec()
         .then(docs => {
             const respond = {
@@ -118,8 +95,7 @@ router.get('/lastest', auth, async (req, res, next) => {
 router.get('/most_watched', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-    .select('name publishDate description cast coverImageName' +
-        'director category linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
+    .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
     .exec()
     .then(docs => {
         const respond = {
@@ -157,11 +133,10 @@ router.get('/most_watched', auth, async (req, res, next) => {
     });
 
 });
-router.get('/all', auth, async (req, res, next) => {
+router.get('/', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-    .select('name publishDate description cast coverImageName' +
-        'director category linkTrailer create_at _id viewFilm').limit(10)
+    .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').limit(10)
     .exec()
     .then(docs => {
         const respond = {
@@ -204,14 +179,14 @@ router.get('/all', auth, async (req, res, next) => {
 // router.get('/new1',(req,res)=>{
 //     res.render('films/new1')
 // })
-function saveCover(film, coverEncoded) {
-    if (coverEncoded == null) return
-    const cover = JSON.parse(coverEncoded)
-    if (cover != null && imageMineType.includes(cover.type)) {
-        film.coverImageName = new Buffer.from(cover.data, 'base64');
-        film.imgType = cover.type;
-    }
-}
+// function saveCover(film, coverEncoded) {
+//     if (coverEncoded == null) return
+//     const cover = JSON.parse(coverEncoded)
+//     if (cover != null && imageMineType.includes(cover.type)) {
+//         film.coverImageName = new Buffer.from(cover.data, 'base64');
+//         film.imgType = cover.type;
+//     }
+// }
 router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
     // const {rating} =req.body
     // if(parseFloat(rating) > 5){
@@ -219,12 +194,12 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
     //         message:'Rating must be less than or as 5'
     //     })
     // }else{
-    const fileName = req.file != null ? req.file.filename : null
-  
+    // const fileName = req.file != null ? req.file.filename : null
+    console.log(req.file)
     const film = new Film({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        coverImageName: new Buffer.from(fileName, 'base64'),
+        coverImageName: req.file.buffer.toString('base64'),
         //imgType:req.body.coverImageName.type,
         //rating :req.body.rating,
         publishDate: req.body.publishDate,
@@ -241,6 +216,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
             res.status(200).json({
                 message: "Created film successfully",
                 createdFilm: {
+                    _id: result._id,
                     name: result.name,
                     viewFilm:result.viewFilm,
                     publishDate: result.publishDate,
@@ -252,7 +228,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
                     director: result.director,
                     category: result.category,
                     linkTrailer: result.linkTrailer,
-                    _id: result._id,
+                   
                     request: {
                         type: 'GET',
                         url: 'http://localhost:3000/film/' + result._id
@@ -269,7 +245,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
             })
         })
 
-   // }
+  // }
 })
 
 
