@@ -6,6 +6,7 @@ const Category =require('../models/category');
 
 
 const Film=require('../models/film');
+const category = require('../models/category');
 
 //Handling incoming GET requests to /categories
 router.get('/',auth,async(req,res,next)=>{
@@ -72,10 +73,10 @@ router.post('/new',(req,res,next)=>{
     });
 })
 
-router.get('/:category_id',async(req,res,next)=>{    
+router.get('/:category_id',auth,async(req,res,next)=>{    
     const id = req.params.category_id;
     const categories =await  Category.findById(id)
-    const films =await  Film.find({ category: categories.id }).limit(6).exec()
+    const films =await  Film.find({"categories" : { $elemMatch: { category: categories.id} }}).limit(6).exec()
     await Category.findById(id)
     .select('name _id')
     .exec()
@@ -84,6 +85,7 @@ router.get('/:category_id',async(req,res,next)=>{
         if(doc){
             res.status(200).json({
                 category:doc,
+                count:films.length,
                 films:films,
                 request:{
                     type:'GET',

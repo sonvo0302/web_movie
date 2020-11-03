@@ -59,7 +59,7 @@ router.get('/lastest', auth, async (req, res, next) => {
                 count: docs.length,
                 films: docs.map(doc => {
                     return {
-                        viewFilm:doc.viewFilm,
+                        viewFilm: doc.viewFilm,
                         name: doc.name,
                         publishDate: doc.publishDate,
                         description: doc.description,
@@ -72,7 +72,7 @@ router.get('/lastest', auth, async (req, res, next) => {
                         _id: doc._id,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/film/' + doc._id
+                            url: 'http://localhost:4000/film/' + doc._id
                         }
                     }
                 }),
@@ -95,234 +95,137 @@ router.get('/lastest', auth, async (req, res, next) => {
 router.get('/most_watched', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-    .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
-    .exec()
-    .then(docs => {
-        const respond = {
-            count: docs.length,
-            films: docs.map(doc => {
-                return {
-                    name: doc.name,
-                    viewFilm:doc.viewFilm,
-                    publishDate: doc.publishDate,
-                    description: doc.description,
-                    create_at: doc.create_at,
-                    cast: doc.cast,
-                    coverImageName: doc.coverImageName,
-                    director: doc.director,
-                    category: doc.category,
-                    linkTrailer: doc.linkTrailer,
-                    _id: doc._id,
-                    request: {
-                        type: 'GET',
-                        url: 'http://localhost:3000/film/' + doc._id
+        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
+        .exec()
+        .then(docs => {
+            const respond = {
+                count: docs.length,
+                films: docs.map(doc => {
+                    return {
+                        name: doc.name,
+                        viewFilm: doc.viewFilm,
+                        publishDate: doc.publishDate,
+                        description: doc.description,
+                        create_at: doc.create_at,
+                        cast: doc.cast,
+                        coverImageName: doc.coverImageName,
+                        director: doc.director,
+                        category: doc.category,
+                        linkTrailer: doc.linkTrailer,
+                        _id: doc._id,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:4000/film/' + doc._id
+                        }
                     }
-                }
-            }),
+                }),
 
-        }
+            }
 
-        res.status(200).json(respond)
+            res.status(200).json(respond)
 
-    })
-    .catch(err => {
-        console.log(err);
-        res.status(500).json({
-            error: err
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
         });
-    });
 
 });
 router.get('/', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-    .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').limit(10)
-    .exec()
-    .then(docs => {
-        const respond = {
-            count: docs.length,
-            films: docs.map(doc => {
-                return {
-                    name: doc.name,
-                    viewFilm:doc.viewFilm,
-                    publishDate: doc.publishDate,
-                    description: doc.description,
-                    create_at: doc.create_at,
-                    cast: doc.cast,
-                    coverImageName: doc.coverImageName,
-                    director: doc.director,
-                    category: doc.category,
-                    linkTrailer: doc.linkTrailer,
-                    _id: doc._id,
-                    request: {
-                        type: 'GET',
-                        url: 'http://localhost:3000/film/' + doc._id
+        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').limit(10)
+        .exec()
+        .then(docs => {
+            const respond = {
+                count: docs.length,
+                films: docs.map(doc => {
+                    return {
+                        name: doc.name,
+                        viewFilm: doc.viewFilm,
+                        publishDate: doc.publishDate,
+                        description: doc.description,
+                        create_at: doc.create_at,
+                        cast: doc.cast,
+                        coverImageName: doc.coverImageName,
+                        director: doc.director,
+                        category: doc.category,
+                        linkTrailer: doc.linkTrailer,
+                        _id: doc._id,
+                        request: {
+                            type: 'GET',
+                            url: 'http://localhost:4000/film/' + doc._id
+                        }
                     }
-                }
-            }),
+                }),
 
-        }
+            }
 
-        res.status(200).json(respond)
+            res.status(200).json(respond)
 
-    })
-    .catch(err => {
-        console.log(err);
-        res.status(500).json({
-            error: err
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).json({
+                error: err
+            });
         });
-    });
 
 });
 
 
-// router.get('/new1',(req,res)=>{
-//     res.render('films/new1')
-// })
-// function saveCover(film, coverEncoded) {
-//     if (coverEncoded == null) return
-//     const cover = JSON.parse(coverEncoded)
-//     if (cover != null && imageMineType.includes(cover.type)) {
-//         film.coverImageName = new Buffer.from(cover.data, 'base64');
-//         film.imgType = cover.type;
-//     }
-// }
+
 router.post('/new', auth, upload.single('coverImageName'), async (req, res, next) => {
-    // const {rating} =req.body
-    // if(parseFloat(rating) > 5){
-    //     res.status(500).json({
-    //         message:'Rating must be less than or as 5'
-    //     })
-    // }else{
+
+
     // const fileName = req.file != null ? req.file.filename : null
-    console.log(req.file)
-    const film = new Film({
-        _id: new mongoose.Types.ObjectId(),
-        name: req.body.name,
-        coverImageName: req.file.buffer.toString('base64'),
-        //imgType:req.body.coverImageName.type,
-        //rating :req.body.rating,
-        publishDate: req.body.publishDate,
-        description: req.body.description,
-        linkTrailer: req.body.linkTrailer,
-        cast: req.body.cast,
-        category: req.body.categoryId,
-        director: req.body.directorId
-        
-    })
-    
-    film.save()
-        .then(result => {
-            res.status(200).json({
-                message: "Created film successfully",
-                createdFilm: {
-                    _id: result._id,
-                    name: result.name,
-                    viewFilm:result.viewFilm,
-                    publishDate: result.publishDate,
-                    description: result.description,
-                    create_at: result.create_at,
-                    cast: result.cast,
-                    coverImageName: result.coverImageName,
-        
-                    director: result.director,
-                    category: result.category,
-                    linkTrailer: result.linkTrailer,
-                   
-                    request: {
-                        type: 'GET',
-                        url: 'http://localhost:3000/film/' + result._id
-                    }
-                }
+    const film_search = await Film.findOne({name:req.body.name});
+    const film_search_category =await Film.findOne({"categories": { $elemMatch: { category: req.body.categoryId}}})
+    if(film_search){
+        let film;
+        film = await Film.findOne(film_search._id)
+        const categoryId = req.body.categoryId
+        const category =await film.Save_Category(categoryId)
+        //film.save()  
+        res.status(200).json({
+            message: 'Login Successful',
+            category: category,
+            film: film,
 
-
-            });
-            
-        })
-        .catch(err => {
-            res.status(500).json({
-                error: err
+        })    
+    }else{
+        try {
+            const film = new Film({
+                _id: new mongoose.Types.ObjectId(),
+                name: req.body.name,
+                coverImageName: req.file.buffer.toString('base64'),
+                //imgType:req.body.coverImageName.type,
+                //rating :req.body.rating,
+                publishDate: req.body.publishDate,
+                description: req.body.description,
+                linkTrailer: req.body.linkTrailer,
+                cast: req.body.cast,
+                director: req.body.directorId
             })
-        })
-
-  // }
-})
-
-
-
-// function base64_encode(file) {
-//     // read binary data
-//     var bitmap = fs.readFileSync(file);
-//     // convert binary data to base64 encoded string
-//     return new Buffer(bitmap).toString('base64');
-// }
-
-// // function to create file from base64 encoded string
-// function base64_decode(base64str, file) {
-//     // create buffer object from base64 encoded string, it is important to tell the constructor that the string is base64 encoded
-//     var bitmap = new Buffer(base64str, 'base64');
-//     // write buffer to file
-//     fs.writeFileSync(file, bitmap);
-//     console.log('******** File created from base64 encoded string ********');
-// }
-
-// router.post('/new', auth, async (req, res, next) => {
-//     const {rating} =req.body
-//     if(parseFloat(rating) > 5){
-//         res.status(500).json({
-//             message:'Rating must be less than or as 5'
-//         })
-//     }else{
-
-//     const fileName = req.file != null ? req.file.filename : null
-//     var base64str = base64_encode(fileName);
-
-//     const film = new Film({
-//         _id: new mongoose.Types.ObjectId(),
-//         name: req.body.name,
-//         coverImageName: base64str,
-//         //imgType : coverImageName.type,
-//         //rating :req.body.rating,
-//         publishDate: req.body.publishDate,
-//         description: req.body.description,
-//         linkTrailer: req.body.linkTrailer,
-//         cast: req.body.cast,
-//         category: req.body.categoryId,
-//         director: req.body.directorId
-//     })
-//     film.save()
-//         .then(result => {
-//             res.status(200).json({
-//                 message: "Created film successfully",
-//                 createdFilm: {
-//                     name: result.name,
-//                     viewFilm:result.viewFilm,
-//                     publishDate: result.publishDate,
-//                     description: result.description,
-//                     create_at: result.create_at,
-//                     cast: result.cast,
-//                     coverImageName: result.coverImageName,
-//                     director: result.director,
-//                     category: result.category,
-//                     linkTrailer: result.linkTrailer,
-//                     _id: result._id,
-//                     request: {
-//                         type: 'GET',
-//                         url: 'http://localhost:3000/film/' + result._id
-//                     }
-//                 }
-
-//             });
-//         })
-//         .catch(err => {
-//             res.status(500).json({
-//                 error: err
-//             })
-//         })
     
-
-//     }
-// })
+            await film.save()
+            const categoryId = req.body.categoryId
+            const category = film.Save_Category(categoryId)
+            res.status(200).json({
+                message:'Success',
+                film: film,
+                category: category
+            })
+        } catch (err) {
+            res.status(500).json({
+                error: err,
+                message: 'Add film fail'
+            })
+        }
+    }
+})
 
 
 
@@ -330,7 +233,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
 
 
 router.get('/:filmId', auth, async (req, res, next) => {
-    
+
     const id = req.params.filmId;
     const film = await Film.findById(id)
     const rating = await Rating.find({ film: film.id }).exec();
@@ -345,7 +248,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
             _id: new mongoose.Types.ObjectId(),
             user: loginId,
             film: req.params.filmId
-            
+
         })
 
         await film_user_history.save();
@@ -371,12 +274,12 @@ router.get('/:filmId', auth, async (req, res, next) => {
                         }
 
                         res.status(200).json({
+                            ratings: rating,
+                            ratingAverage: avg,
                             film: result,
-                            ratings:rating,
-                            ratingAverage:avg,
                             request: {
                                 type: 'GET',
-                                url: 'http://localhost:3000/film/' + result._id
+                                url: 'http://localhost:4000/film/' + result._id
                             }
                         });
                     } else {
@@ -415,12 +318,12 @@ router.get('/:filmId', auth, async (req, res, next) => {
                         }
 
                         res.status(200).json({
+                            ratings: rating,
+                            ratingAverage: avg,
                             film: result,
-                            ratings:rating,
-                            ratingAverage:avg,
                             request: {
                                 type: 'GET',
-                                url: 'http://localhost:3000/film/' + result._id
+                                url: 'http://localhost:4000/film/' + result._id
                             }
                         });
                     } else {
@@ -471,18 +374,14 @@ router.put('/edit/:filmId', auth, upload.single('coverImageName'), async (req, r
     const rating = await Rating.find({ film: film.id }).exec();
     const comment = await Comment.find({ film: film.id }).exec();
 
-    const fileName = req.file != null ? req.file.filename : null
-
-    film.name = req.body.name,
-        film.coverImageName = fileName,
-        //rating :req.body.rating,
+        film.name = req.body.name,
+        film.coverImageName = req.file.buffer.toString('base64'),
         film.publishDate = req.body.publishDate,
         film.description = req.body.description,
         film.linkTrailer = req.body.linkTrailer,
         film.cast = req.body.cast,
-        film.category = req.body.categoryId,
         film.director = req.body.directorId
-
+    
     film.save()
         .then(result => {
             if (result) {
@@ -526,7 +425,9 @@ router.put('/edit/:filmId', auth, upload.single('coverImageName'), async (req, r
                 error: err
             })
         })
-    //     })
+        const categoryId = req.body.categoryId
+        const category = film.Save_Category(categoryId)
+
 
 
 
@@ -541,7 +442,7 @@ router.delete('/delete/:filmId', (req, res, next) => {
                 message: 'Film Deleted',
                 request: {
                     type: 'POST',
-                    url: 'http://localhost:3000/film/',
+                    url: 'http://localhost:4000/film/',
                     body: {
                         name: 'String',
                         rating: 'Number',

@@ -11,7 +11,7 @@ const filmSchema = mongoose.Schema({
   publishDate: { type: Date, require: true },
   create_at: { type: Date, require: true, default: Date.now },
   description: { type: String, require: true },
-  category: { type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Category' },
+  categories: [{category:{ type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Category' }}],
   director: { type: mongoose.Schema.Types.ObjectId, require: true, ref: 'Director' },
   linkTrailer: { type: String, require: true },
   cast: { type: String, require: true },
@@ -26,6 +26,14 @@ const filmSchema = mongoose.Schema({
   // }
 })
 
+
+filmSchema.methods.Save_Category = async function(category) {
+  // Generate an auth token for the user
+  const film = this
+  film.categories = film.categories.concat({category})
+  await film.save()
+  return category
+}
 
 // filmSchema.virtual('coverImagePath').get(function() {
 //     if (this.coverImageName != null) {
