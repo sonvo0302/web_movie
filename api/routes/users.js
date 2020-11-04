@@ -96,7 +96,7 @@ router.post('/password/reset', async (req, res) => {
             service: 'Gmail',
             auth: {
                 user: 'sonvo0302@gmail.com', //Tài khoản gmail vừa tạo
-                pass: 'Sonngao2512' //Mật khẩu tài khoản gmail vừa tạo
+                pass: 'cjugjguorjctooev' //Mật khẩu tài khoản gmail vừa tạo
             },
             tls: {
                 // do not fail on invalid certs

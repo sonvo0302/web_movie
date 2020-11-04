@@ -44,7 +44,7 @@ router.get('/user', auth, async (req, res, next) => {
     const id = req.query.userId;
     const loginId = req.user._id
     if(id==loginId){
-    const film_user_history = await Film_User_History.findOne({user:id})   
+    // const film_user_history = await Film_User_History.findOne({user:id})   
         Film_User_History.find({user:id})
             .select('_id user film ')
             .populate(' film ')
@@ -56,7 +56,7 @@ router.get('/user', auth, async (req, res, next) => {
                         film_user_history: doc,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/film_user_history/'
+                            url: 'http://localhost:4000/film_user_history/'
                         }
                     });
                 } else {

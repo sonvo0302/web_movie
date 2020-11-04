@@ -16,6 +16,7 @@ const Film_User_History = require('../models/film_user_history');
 const { resolveSoa } = require('dns');
 const category = require('../models/category');
 const director = require('../models/director');
+const { estimatedDocumentCount } = require('../models/film');
 
 
 
@@ -136,13 +137,14 @@ router.get('/most_watched', auth, async (req, res, next) => {
 router.get('/', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').limit(10)
+        .select('name publishDate description cast coverImageName director categories linkTrailer create_at _id viewFilm').limit(10)
         .exec()
         .then(docs => {
             const respond = {
                 count: docs.length,
                 films: docs.map(doc => {
                     return {
+                        _id: doc._id,
                         name: doc.name,
                         viewFilm: doc.viewFilm,
                         publishDate: doc.publishDate,
@@ -151,9 +153,8 @@ router.get('/', auth, async (req, res, next) => {
                         cast: doc.cast,
                         coverImageName: doc.coverImageName,
                         director: doc.director,
-                        category: doc.category,
+                        categories: doc.categories,
                         linkTrailer: doc.linkTrailer,
-                        _id: doc._id,
                         request: {
                             type: 'GET',
                             url: 'http://localhost:4000/film/' + doc._id
@@ -181,21 +182,21 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
 
 
     // const fileName = req.file != null ? req.file.filename : null
-    const film_search = await Film.findOne({name:req.body.name});
-    const film_search_category =await Film.findOne({"categories": { $elemMatch: { category: req.body.categoryId}}})
-    if(film_search){
+    const film_search = await Film.findOne({ name: req.body.name });
+    const film_search_category = await Film.findOne({ "categories": { $elemMatch: { category: req.body.categoryId } } })
+    if (film_search) {
         let film;
         film = await Film.findOne(film_search._id)
         const categoryId = req.body.categoryId
-        const category =await film.Save_Category(categoryId)
+        const category = await film.Save_Category(categoryId)
         //film.save()  
         res.status(200).json({
             message: 'Login Successful',
             category: category,
             film: film,
 
-        })    
-    }else{
+        })
+    } else {
         try {
             const film = new Film({
                 _id: new mongoose.Types.ObjectId(),
@@ -209,12 +210,12 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
                 cast: req.body.cast,
                 director: req.body.directorId
             })
-    
+
             await film.save()
             const categoryId = req.body.categoryId
             const category = film.Save_Category(categoryId)
             res.status(200).json({
-                message:'Success',
+                message: 'Success',
                 film: film,
                 category: category
             })
@@ -230,9 +231,19 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
 
 
 
+// router.get('/f/:filmId', auth, async (req, res, next) => {
+//     Film
+//         .findById(req.params.filmId)
+//         .populate('categories')
+//         .exec(function (err, films) {
 
+//             Category.populate(films.categories, { path: 'category' }, function (err, doc) {
+//                 res.json(doc);
+//             });
+//         });
+// })
 
-router.get('/:filmId',auth, async (req, res, next) => {
+router.get('/:filmId', auth, async (req, res, next) => {
 
     const id = req.params.filmId;
     const film = await Film.findById(id)
@@ -259,36 +270,25 @@ router.get('/:filmId',auth, async (req, res, next) => {
 
             const condition = ({ _id: id })
             const dataForUpdate = { viewFilm: film_user_history1.length }
-            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories director').exec()
-                .then(result => {
-                    if (result) {
-                        var total = 0;
-                        for (var i = 0; i < rating.length; i++) {
-                            total += rating[i].numberofrating;
-                        }
-                        var avg = 0
-                        if (rating.length == '') {
-                            avg = 0
-                        } else {
-                            avg = total / rating.length;
-                        }
-
-                        res.status(200).json({
-                            ratings: rating,
-                            ratingAverage: avg,
-                            film: result,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:4000/film/' + result._id
-                            }
-                        });
-                    } else {
-                        res.status(404).json({ message: 'There was a problem updating password' });
+            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories').exec(function (err, films) {
+                Category.populate(films.categories, { path: 'category' }, function (err, doc) {
+                    var total = 0;
+                    for (var i = 0; i < rating.length; i++) {
+                        total += rating[i].numberofrating;
                     }
-                })
-
-
-
+                    var avg = 0
+                    if (rating.length == '') {
+                        avg = 0
+                    } else {
+                        avg = total / rating.length;
+                    }
+                    res.status(200).json({
+                        ratingAverage:avg,
+                        categories: doc.name,
+                        films: films
+                    });
+                });
+            })
             if (errorFind) {
                 return res.status(401).json({
                     msg: "Something Went Wrong",
@@ -296,51 +296,111 @@ router.get('/:filmId',auth, async (req, res, next) => {
                 });
             }
         })
+                // .then(result => {
+                //     if (result) {
+                //         var total = 0;
+                //         for (var i = 0; i < rating.length; i++) {
+                //             total += rating[i].numberofrating;
+                //         }
+                //         var avg = 0
+                //         if (rating.length == '') {
+                //             avg = 0
+                //         } else {
+                //             avg = total / rating.length;
+                //         }
+
+                //         res.status(200).json({
+                //             ratings: rating,
+                //             ratingAverage: avg,
+                //             film: result,
+                //             request: {
+                //                 type: 'GET',
+                //                 url: 'http://localhost:4000/film/' + result._id
+                //             }
+                //         });
+                //     } else {
+                //         res.status(404).json({ message: 'There was a problem updating password' });
+                //     }
+                // })
+
+
+
     } else {
-        const film_user_history1 = await Film_User_History.find({ film: film.id }).exec();
-        Film.findById(id, (errorFind, film) => {
-            if (errorFind) throw errorFind;
+    const film_user_history1 = await Film_User_History.find({ film: film.id }).exec();
+    Film.findById(id, (errorFind, film) => {
+        if (errorFind) throw errorFind;
 
-            const condition = ({ _id: id })
-            const dataForUpdate = { viewFilm: film_user_history1.length }
-            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories director').exec()
-                .then(result => {
-                    if (result) {
-                        var total = 0;
-                        for (var i = 0; i < rating.length; i++) {
-                            total += rating[i].numberofrating;
-                        }
-                        var avg = 0
-                        if (rating.length == '') {
-                            avg = 0
-                        } else {
-                            avg = total / rating.length;
-                        }
-
-                        res.status(200).json({
-                            ratings: rating,
-                            ratingAverage: avg,
-                            film: result,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:4000/film/' + result._id
-                            }
-                        });
-                    } else {
-                        res.status(404).json({ message: 'There was a problem updating password' });
-                    }
-                })
-
-
-
-            if (errorFind) {
-                return res.status(401).json({
-                    msg: "Something Went Wrong",
-                    success: false
+        const condition = ({ _id: id })
+        const dataForUpdate = { viewFilm: film_user_history1.length }
+        Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories').exec(function (err, films) {
+            Category.populate(films.categories, { path: 'category' }, function (err, doc) {
+                var total = 0;
+                for (var i = 0; i < rating.length; i++) {
+                    total += rating[i].numberofrating;
+                }
+                var avg = 0
+                if (rating.length == '') {
+                    avg = 0
+                } else {
+                    avg = total / rating.length;
+                }
+                res.status(200).json({
+                    ratingAverage:avg,
+                    categories: doc,
+                    films: films
                 });
-            }
+            });
         })
-    }
+        if (errorFind) {
+            return res.status(401).json({
+                msg: "Something Went Wrong",
+                success: false
+            });
+        }
+    })
+    // Film.findById(id, (errorFind, film) => {
+    //     if (errorFind) throw errorFind;
+
+    //     const condition = ({ _id: id })
+    //     const dataForUpdate = { viewFilm: film_user_history1.length }
+    //     Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories categories.$.category').exec()
+    //         .then(result => {
+    //             if (result) {
+    //                 var total = 0;
+    //                 for (var i = 0; i < rating.length; i++) {
+    //                     total += rating[i].numberofrating;
+    //                 }
+    //                 var avg = 0
+    //                 if (rating.length == '') {
+    //                     avg = 0
+    //                 } else {
+    //                     avg = total / rating.length;
+    //                 }
+
+    //                 res.status(200).json({
+    //                     ratings: rating,
+    //                     ratingAverage: avg,
+    //                     film: result,
+    //                     request: {
+    //                         type: 'GET',
+    //                         url: 'http://localhost:4000/film/' + result._id
+    //                     }
+    //                 });
+    //             } else {
+    //                 res.status(404).json({ message: 'There was a problem updating password' });
+    //             }
+    //         })
+
+
+
+    //     if (errorFind) {
+    //         return res.status(401).json({
+    //             msg: "Something Went Wrong",
+    //             success: false
+    //         });
+    //     }
+    
+}
 
 
 })
@@ -374,14 +434,14 @@ router.put('/edit/:filmId', auth, upload.single('coverImageName'), async (req, r
     const rating = await Rating.find({ film: film.id }).exec();
     const comment = await Comment.find({ film: film.id }).exec();
 
-        film.name = req.body.name,
+    film.name = req.body.name,
         film.coverImageName = req.file.buffer.toString('base64'),
         film.publishDate = req.body.publishDate,
         film.description = req.body.description,
         film.linkTrailer = req.body.linkTrailer,
         film.cast = req.body.cast,
         film.director = req.body.directorId
-    
+
     film.save()
         .then(result => {
             if (result) {
@@ -425,8 +485,8 @@ router.put('/edit/:filmId', auth, upload.single('coverImageName'), async (req, r
                 error: err
             })
         })
-        const categoryId = req.body.categoryId
-        const category = film.Save_Category(categoryId)
+    const categoryId = req.body.categoryId
+    const category = film.Save_Category(categoryId)
 
 
 

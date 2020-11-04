@@ -89,7 +89,7 @@ router.get('/:category_id',auth,async(req,res,next)=>{
                 films:films,
                 request:{
                     type:'GET',
-                    url:'http://localhost:3000/categories'
+                    url:'http://localhost:4000/category'
                 }
             });
         }else{
@@ -110,7 +110,7 @@ router.delete('/delete/:categoryId',async(req,res,next)=>{
             message:'Category Deleted',
             request:{
                 type:'POST',
-                url:'http://localhost:3000/categories',
+                url:'http://localhost:4000/category',
                 body:{
                     name:'String',
                 }

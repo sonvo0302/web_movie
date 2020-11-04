@@ -34,7 +34,7 @@ mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true })
 
 
 const db = mongoose.connection;
-db.on('error', eror => console.error(error));
+db.on('error', error => console.error(error));
 db.once('open', () => console.log('Connected Successfully'));
 mongoose.Promise=global.Promise;
 
