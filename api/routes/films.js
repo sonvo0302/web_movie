@@ -52,13 +52,14 @@ router.get('/lastest', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
 
     Film.find({ name: regex })
-        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ publishDate: 'desc' }).limit(10).skip(2)
+        .select('name publishDate description cast coverImageName director categories linkTrailer create_at _id viewFilm').sort({ publishDate: 'desc' }).limit(10).skip(2)
         .exec()
         .then(docs => {
             const respond = {
                 count: docs.length,
                 films: docs.map(doc => {
                     return {
+                        _id: doc._id,
                         viewFilm: doc.viewFilm,
                         name: doc.name,
                         publishDate: doc.publishDate,
@@ -67,9 +68,8 @@ router.get('/lastest', auth, async (req, res, next) => {
                         cast: doc.cast,
                         coverImageName: doc.coverImageName,
                         director: doc.director,
-                        category: doc.category,
+                        categories: doc.categories,
                         linkTrailer: doc.linkTrailer,
-                        _id: doc._id,
                         request: {
                             type: 'GET',
                             url: 'http://localhost:4000/film/' + doc._id
@@ -95,13 +95,14 @@ router.get('/lastest', auth, async (req, res, next) => {
 router.get('/most_watched', auth, async (req, res, next) => {
     const regex = new RegExp(req.query.text_search, 'i');
     Film.find({ name: regex })
-        .select('name publishDate description cast coverImageName director category linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
+        .select('name publishDate description cast coverImageName director categories linkTrailer create_at _id viewFilm').sort({ viewFilm: 'desc' }).limit(10).skip(2)
         .exec()
         .then(docs => {
             const respond = {
                 count: docs.length,
                 films: docs.map(doc => {
                     return {
+                        id: doc._id,
                         name: doc.name,
                         viewFilm: doc.viewFilm,
                         publishDate: doc.publishDate,
@@ -110,9 +111,8 @@ router.get('/most_watched', auth, async (req, res, next) => {
                         cast: doc.cast,
                         coverImageName: doc.coverImageName,
                         director: doc.director,
-                        category: doc.category,
+                        categories: doc.categories,
                         linkTrailer: doc.linkTrailer,
-                        _id: doc._id,
                         request: {
                             type: 'GET',
                             url: 'http://localhost:4000/film/' + doc._id
@@ -232,7 +232,7 @@ router.post('/new', auth, upload.single('coverImageName'), async (req, res, next
 
 
 
-router.get('/:filmId', auth, async (req, res, next) => {
+router.get('/:filmId',auth, async (req, res, next) => {
 
     const id = req.params.filmId;
     const film = await Film.findById(id)
@@ -259,7 +259,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
 
             const condition = ({ _id: id })
             const dataForUpdate = { viewFilm: film_user_history1.length }
-            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('category director').exec()
+            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories director').exec()
                 .then(result => {
                     if (result) {
                         var total = 0;
@@ -303,7 +303,7 @@ router.get('/:filmId', auth, async (req, res, next) => {
 
             const condition = ({ _id: id })
             const dataForUpdate = { viewFilm: film_user_history1.length }
-            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('category director').exec()
+            Film.findOneAndUpdate(condition, dataForUpdate, { new: true }).populate('categories director').exec()
                 .then(result => {
                     if (result) {
                         var total = 0;
