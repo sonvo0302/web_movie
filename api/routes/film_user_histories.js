@@ -53,6 +53,7 @@ router.get('/user', auth, async (req, res, next) => {
                 //console.log("From database",doc)
                 if(doc){
                     res.status(200).json({
+                        count:doc.length,
                         film_user_history: doc,
                         request: {
                             type: 'GET',
