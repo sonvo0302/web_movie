@@ -24,7 +24,7 @@ router.get('/all', auth, async (req, res, next) => {
                         _id: doc._id,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/comment/' + doc._id
+                            url: 'http://localhost:4000/comment/' + doc._id
                         }
                     }
                 })
@@ -46,64 +46,76 @@ router.get('/all', auth, async (req, res, next) => {
 })
 
 router.post('/film', auth, async (req, res, next) => {
-    const filmId_new = req.query.filmId;
-    const { content } = req.body
-    const loginId = req.user._id;
-    console.log(loginId);
-    const film_user_comment = await Comment.find({ user: loginId, film: filmId_new });
-    if (film_user_comment.length == '') {
-        const comment = new Comment({
-            _id: new mongoose.Types.ObjectId(),
-            user: loginId,
-            film: filmId_new,
-            content: req.body.content
-        })
-        comment
-            .save()
-            .then(result => {
-                console.log(result);
-                res.status(200).json({
-                    message: "Create comment successfully",
-                    createdRating: {
-                        user: result.user,
-                        film: result.film,
-                        content: result.content,
-                        create_at: result.create_at,
-                        updatedDate: result.updatedDate,
-                        _id: result._id,
-                        request: {
-                            type: 'GET',
-                            url: 'http://localhost:3000/comment/' + result._id
-                        }
-                    }
-
-                });
+    try {
+        const { content } = req.body
+        if (content == '') {
+            res.status(400).json({
+                message: 'You have not input content'
             })
-            .catch(err => {
-                console.log(err);
-                res.status(500).json({
-                    error: err
+        } else {
+            const filmId_new = req.query.filmId;
+            const loginId = req.user._id;
+            console.log(loginId);
+            const film_user_comment = await Comment.find({ user: loginId, film: filmId_new });
+            if (film_user_comment.length == '') {
+                const comment = new Comment({
+                    _id: new mongoose.Types.ObjectId(),
+                    user: loginId,
+                    film: filmId_new,
+                    content: req.body.content
                 })
-            });
-    } else {
-        Comment.findOne({ film: filmId_new, user: loginId }, function (err, comment) {
-            if (err) throw err;
-            const condition = { _id: comment._id }
-            const dataForUpdate = { content: req.body.content,updatedDate:Date.now().toString() }
-            Comment.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                .then(result => {
-                    if (result) {
+                comment
+                    .save()
+                    .then(result => {
+                        console.log(result);
                         res.status(200).json({
-                            comment: result,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:3000/comment/' + result._id
+                            message: "Create comment successfully",
+                            createdRating: {
+                                user: result.user,
+                                film: result.film,
+                                content: result.content,
+                                create_at: result.create_at,
+                                updatedDate: result.updatedDate,
+                                _id: result._id,
+                                request: {
+                                    type: 'GET',
+                                    url: 'http://localhost:4000/comment/' + result._id
+                                }
                             }
+
                         });
-                    } else {
-                        res.status(404).json({ message: 'There was a problem updating rating' });
-                    }
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        res.status(500).json({
+                            error: err
+                        })
+                    });
+            } else {
+                Comment.findOne({ film: filmId_new, user: loginId }, function (err, comment) {
+                    if (err) throw err;
+                    const condition = { _id: comment._id }
+                    const dataForUpdate = { content: req.body.content, updatedDate: Date.now().toString() }
+                    Comment.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                        .then(result => {
+                            if (result) {
+                                res.status(200).json({
+                                    comment: result,
+                                    request: {
+                                        type: 'GET',
+                                        url: 'http://localhost:4000/comment/' + result._id
+                                    }
+                                });
+                            } else {
+                                res.status(404).json({ message: 'There was a problem updating rating' });
+                            }
+                        })
                 })
+            }
+        }
+    } catch (err) {
+        res.status(500).json({
+            message: err
         })
     }
 })
@@ -122,7 +134,7 @@ router.get('/:commentId', async (req, res, next) => {
                     comment: doc,
                     request: {
                         type: 'GET',
-                        url: 'http://localhost:3000/comment'
+                        url: 'http://localhost:4000/comment'
                     }
                 });
             } else {
@@ -158,7 +170,7 @@ router.put('/edit/:commentId', (req, res, next) => {
                     comment: result,
                     request: {
                         type: 'GET',
-                        url: 'http://localhost:3000/comment' + result._id
+                        url: 'http://localhost:4000/comment' + result._id
                     }
                 });
             } else {
@@ -176,7 +188,7 @@ router.delete('/delete/:commentId', (req, res, next) => {
                 message: 'Comment Deleted',
                 request: {
                     type: 'POST',
-                    url: 'http://localhost:3000/comment',
+                    url: 'http://localhost:4000/comment',
                     body: {
                         user: 'userId',
                         film: 'filmId',

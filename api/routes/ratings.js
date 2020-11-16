@@ -70,75 +70,81 @@ router.get('/all', auth, async (req, res, next) => {
 // })
 
 
-router.post('/film',auth,async(req,res)=>{
-    const filmId_add = req.query.filmId
-    const number_add = req.query.numberofrating
-    const loginId = req.user._id;
-    //console.log(loginId);
+router.post('/film', auth, async (req, res) => {
+    try {
+        const filmId_add = req.query.filmId
+        const number_add = req.query.numberofrating
+        const loginId = req.user._id;
+        //console.log(loginId);
 
-    //const {numberofrating} =req.body
-    if (parseFloat(number_add) > 5) {
-        res.status(500).json({
-            message: 'Rating must be less than or as 5'
-        })
-    } else {
-        
-        const user_rating= await Rating.find({user:loginId,film:filmId_add});
-        // const rating_user =await Rating.find({ user: loginId, film: filmId_add }).exec();
-         if (user_rating.length == '') {
-            const rating = new Rating({
-                _id: new mongoose.Types.ObjectId(),
-                user: loginId,
-                film: filmId_add,
-                numberofrating: number_add
+        //const {numberofrating} =req.body
+        if (parseFloat(number_add) > 5) {
+            res.status(400).json({
+                message: 'Rating must be less than or as 5'
             })
-            rating
-                .save()
-                .then(result => {
-                    console.log(result);
-                    res.status(200).json({
-                        message: "Create rating successfully",
-                        createdRating: {
-                            user: result.user,
-                            film: result.film,
-                            numberofrating: result.numberofrating,
-                            _id: result._id,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:3000/rating/' + result._id
-                            }
-                        }
-
-                    });
-                })
-                .catch(err => {
-                    console.log(err);
-                    res.status(500).json({
-                        error: err
-                    })
-                });
         } else {
-            Rating.findOne({film:filmId_add,user:loginId }, function (err, rating) {
-                if (err) throw err;
-                const condition = { _id: rating._id }
-                const dataForUpdate = { numberofrating: number_add }
-                Rating.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+
+            const user_rating = await Rating.find({ user: loginId, film: filmId_add });
+            // const rating_user =await Rating.find({ user: loginId, film: filmId_add }).exec();
+            if (user_rating.length == '') {
+                const rating = new Rating({
+                    _id: new mongoose.Types.ObjectId(),
+                    user: loginId,
+                    film: filmId_add,
+                    numberofrating: number_add
+                })
+                rating
+                    .save()
                     .then(result => {
-                        if (result) {
-                            res.status(200).json({
-                                rating: result,
+                        console.log(result);
+                        res.status(200).json({
+                            message: "Create rating successfully",
+                            createdRating: {
+                                user: result.user,
+                                film: result.film,
+                                numberofrating: result.numberofrating,
+                                _id: result._id,
                                 request: {
                                     type: 'GET',
-                                    url: 'http://localhost:3000/rating/' + result._id
+                                    url: 'http://localhost:4000/rating/' + result._id
                                 }
-                            });
-                        } else {
-                            res.status(404).json({ message: 'There was a problem updating rating' });
-                        }
+                            }
+
+                        });
                     })
-            })
+                    .catch(err => {
+                        console.log(err);
+                        res.status(500).json({
+                            error: err
+                        })
+                    });
+            } else {
+                Rating.findOne({ film: filmId_add, user: loginId }, function (err, rating) {
+                    if (err) throw err;
+                    const condition = { _id: rating._id }
+                    const dataForUpdate = { numberofrating: number_add }
+                    Rating.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                        .then(result => {
+                            if (result) {
+                                res.status(200).json({
+                                    rating: result,
+                                    request: {
+                                        type: 'GET',
+                                        url: 'http://localhost:4000/rating/' + result._id
+                                    }
+                                });
+                            } else {
+                                res.status(404).json({ message: 'There was a problem updating rating' });
+                            }
+                        })
+                })
+            }
         }
-   }
+    } catch (err) {
+        res.status(500).json({
+            message: err
+        })
+    }
 })
 
 

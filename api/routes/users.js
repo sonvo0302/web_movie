@@ -78,79 +78,85 @@ router.get('/all', auth, async (req, res, next) => {
 
 
 router.post('/password/reset', async (req, res) => {
-    User.findOne({ email: req.body.email }, function (error, userData) {
-        if (!userData) {
-            res.status(400).json({
-                mg: 'Email not exists'
-            })
-        }
-        const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
-        userData.resetToken = resetToken
-        userData.save()
+    if (req.body.email == '') {
+        res.status(400).json({
+            message: 'Please enter in field'
+        })
+    } else {
+        User.findOne({ email: req.body.email }, function (error, userData) {
+            if (!userData) {
+                res.status(400).json({
+                    mg: 'Email not exists'
+                })
+            } else {
+                const resetToken = jwt.sign({ _id: userData._id }, process.env.RESET_KEY)
+                userData.resetToken = resetToken
+                userData.save()
 
 
-        var transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            service: 'Gmail',
-            auth: {
-                user: 'sonvo0302@gmail.com', //Tài khoản gmail vừa tạo
-                pass: 'cjugjguorjctooev' //Mật khẩu tài khoản gmail vừa tạo
-            },
-            tls: {
-                // do not fail on invalid certs
-                rejectUnauthorized: false
-            }
-            // host: "smtp.mailtrap.io",
-            // port: 2525,
-            // auth: {
-            //     user: "b17319188d5ff4",
-            //     pass: "fe7f169ce62c87"
-            // }
+                var transporter = nodemailer.createTransport({
+                    host: 'smtp.gmail.com',
+                    port: 465,
+                    secure: true,
+                    service: 'Gmail',
+                    auth: {
+                        user: 'sonvo0302@gmail.com', //Tài khoản gmail vừa tạo
+                        pass: 'frygfmcbfjthezyd' //Mật khẩu tài khoản gmail vừa tạo
+                    },
+                    tls: {
+                        // do not fail on invalid certs
+                        rejectUnauthorized: false
+                    }
+                    // host: "smtp.mailtrap.io",
+                    // port: 2525,
+                    // auth: {
+                    //     user: "b17319188d5ff4",
+                    //     pass: "fe7f169ce62c87"
+                    // }
 
-        });
+                });
 
 
-        // const condition = ({_id:userData._id })
-        // const dataForUpdate = { resetToken: resetToken}
-        // User.findOneAndUpdate(condition,dataForUpdate,{ new: true }).exec();
-        //var currentDateTime = new Date();
-        var mailOptions = {
-            from: 'sonvo0302@gmail.com',
-            to: req.body.email,
-            subject: 'Password Reset',
-            // text: 'That was easy!',
-            html: "<h1>Welcome To Daily Task Report ! </h1><p>\
+                // const condition = ({_id:userData._id })
+                // const dataForUpdate = { resetToken: resetToken}
+                // User.findOneAndUpdate(condition,dataForUpdate,{ new: true }).exec();
+                //var currentDateTime = new Date();
+                var mailOptions = {
+                    from: 'sonvo0302@gmail.com',
+                    to: req.body.email,
+                    subject: 'Password Reset',
+                    // text: 'That was easy!',
+                    html: "<h1>Welcome To Daily Task Report ! </h1><p>\
             <h3>Hello "+ userData.name + "</h3>\
             If You are requested to reset your password then click on below link<br/>\
             <a href='http://localhost:4000/user/password/change"+ '?email=' + userData.email + '&resetToken=' + userData.resetToken + "'>Click On This Link</a>\
             </p>"
-        };
-        //console.log(resetToken)
+                };
+                //console.log(resetToken)
 
 
-        transporter.sendMail(mailOptions, async function (error, info) {
-            if (error) {
-                console.log(error);
-            } else {
-                console.log('Email sent: ' + info.response);
-                await User.updateOne({ email: userData.email }, {
-                    resetToken: userData.resetToken,
+                transporter.sendMail(mailOptions, async function (error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                        await User.updateOne({ email: userData.email }, {
+                            resetToken: userData.resetToken,
 
-                }, { multi: true }, function (err, affected, resp) {
-                    return res.status(200).json({
-                        success: false,
-                        msg: info.response,
-                        userlist: resp
-                    });
-                })
+                        }, { multi: true }, function (err, affected, resp) {
+                            return res.status(200).json({
+                                success: false,
+                                msg: info.response,
+                                userlist: resp
+                            });
+                        })
+                    }
+                });
             }
-        });
-
-    })
+        })
 
 
+    }
 });
 
 router.post('/password/change', (req, res) => {
@@ -180,7 +186,7 @@ router.post('/password/change', (req, res) => {
                                             user: result,
                                             request: {
                                                 type: 'GET',
-                                                url: 'http://localhost:3000/user/' + result._id
+                                                url: 'http://localhost:4000/user/' + result._id
                                             }
                                         });
                                     } else {
@@ -205,62 +211,107 @@ router.post('/password/change', (req, res) => {
     })
 })
 
+var emailRegex = /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+
+function isEmailValid(email) {
+    if (!email)
+        return false;
+
+    if (email.length > 254)
+        return false;
+
+    var valid = emailRegex.test(email);
+    if (!valid)
+        return false;
+
+    // Further checking of some things regex can't handle
+    var parts = email.split("@");
+    if (parts[0].length > 64)
+        return false;
+
+    var domainParts = parts[1].split(".");
+    if (domainParts.some(function (part) { return part.length > 63; }))
+        return false;
+
+    return true;
+}
+
 router.put('/update/:id', auth, async (req, res) => {
     const id = req.params.id;
-    User.findById(id, function (err, user) {
-        bcrypt.compare(req.body.currentPassword, user.password,(err,isMatch)=>{
+    User.findById(id, async function (err, user) {
+        bcrypt.compare(req.body.currentPassword, user.password, (err, isMatch) => {
             if (isMatch) {
-                bcrypt.hash(req.body.new_password, 8, (err, hash) => {
-                    if (err) throw err;
-                    const hasedPassword = hash;
-                    const condition = { _id: id };
-                    const dataForUpdate = { name: req.body.name, email: req.body.email, password: hasedPassword, updatedDate: Date.now().toString() };
+                bcrypt.hash(req.body.new_password, 8, (error, hash) => {
+                    if (error) throw error;
+                    if (isEmailValid(req.body.email) == true) {
+                        const hasedPassword = hash;
+                        const condition = { _id: id };
+                        const dataForUpdate = { name: req.body.name, email: req.body.email, password: hasedPassword, updatedDate: Date.now().toString() };
+                        User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
+                            .then(result => {
+                                if (result) {
+                                    res.status(200).json({
+                                        user: result,
+                                        request: {
+                                            type: 'GET',
+                                            url: 'http://localhost:4000/user/' + result._id
+                                        }
+                                    });
+                                } else {
+                                    res.status(404).json({ message: 'There was a problem updating user' });
+                                }
+                            })
+                    } else {
+                        res.status(401).json({
+                            message: 'Email must be xxx@gmail.com'
+                        })
+                    }
+                })
+
+
+
+            } else {
+                if (isEmailValid(req.body.email) == true) {
+                    let condition = { _id: id };
+                    let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
                     User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
                         .then(result => {
                             if (result) {
                                 res.status(200).json({
+                                    message: 'Current Password Incorrect, No update password',
                                     user: result,
                                     request: {
                                         type: 'GET',
-                                        url: 'http://localhost:3000/user/' + result._id
+                                        url: 'http://localhost:4000/user/' + result._id
                                     }
                                 });
                             } else {
                                 res.status(404).json({ message: 'There was a problem updating user' });
                             }
                         })
-                })
-        } else {
-            let condition = { _id: id };
-            let dataForUpdate = { name: req.body.name, email: req.body.email, updatedDate: Date.now().toString() };
-            User.findOneAndUpdate(condition, dataForUpdate, { new: true }).exec()
-                .then(result => {
-                    if (result) {
-                        res.status(200).json({
-                            message:'Current Password Incorrect, No update password',
-                            user: result,
-                            request: {
-                                type: 'GET',
-                                url: 'http://localhost:3000/user/' + result._id
-                            }
-                        });
-                    } else {
-                        res.status(404).json({ message: 'There was a problem updating user' });
-                    }
-                })
+                } else {
+                    res.status(401).json({
+                        message: 'Email must be xxx@gmail.com'
+                    })
+                }
 
-        }
+            }
         })
-       
 
-           
+
+
         // } else {
         //     return res.status(401).json({
         //         msg: "Incorrect password.",
         //         success: false
         //     });
         // }
+        let user_info;
+        user_info = await User_Info.findOne({ user: user._id }).exec();
+        user_info.name = req.body.name;
+        user_info.save()
     })
+
 
 });
 
@@ -268,20 +319,25 @@ router.put('/update/:id', auth, async (req, res) => {
 
 router.post('/register', async (req, res) => {
     // Create a new user
+
     try {
         const { name, email, password, password2 } = req.body;
 
         if (!name || !email || !password || !password2) {
             return res.status(400).json({ msg: 'Please enter all fields' });
         }
-
+        if (isEmailValid(email) == false) {
+            res.status(401).json({
+                msg: 'Email must be xxx@gmail.com'
+            })
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+        }
         if (password != password2) {
             return res.status(400).json({ msg: 'Passwords do not match' });
         }
 
-        if (password.length < 8) {
-            return res.status(400).json({ msg: 'Password must be at least 6 characters' });
-        }
 
 
         const users = await User.findOne({ email: email })
@@ -291,13 +347,13 @@ router.post('/register', async (req, res) => {
         }
         const user = new User(req.body)
         await user.save()
-        const user_info =new User_Info({
+        const user_info = new User_Info({
             _id: new mongoose.Types.ObjectId(),
             name: req.body.name,
             dateofbirth: null,
             mobile_phone: null,
             gender: null,
-            user:user._id   
+            user: user._id
         })
         await user_info.save()
         const token = await user.generateAuthToken()
@@ -324,14 +380,16 @@ router.post('/login', async (req, res) => {
     //Login a registered user
     const { email, password } = req.body
     const users = await User.findOne({ email: email })
-
+    if (!email || !password) {
+        return res.status(401).json({ message: 'Please enter all fields' })
+    }
     if (!users) {
         return res.status(401).json({ error: 'Login failed! Email does not exist ' })
     }
     try {
         const user = await User.findByCredentials(email, password)
-        if(!user){
-            res.status(401).json({message:'Check Credentials Failed'})
+        if (!user) {
+            res.status(401).json({ message: 'Check Credentials Failed' })
         }
 
         //user.resetToken = null
@@ -342,7 +400,7 @@ router.post('/login', async (req, res) => {
             user: user,
 
         })
-    
+
     } catch (err) {
         res.status(500).json({
             message: 'Login failed! Password Invalid',
@@ -365,7 +423,8 @@ router.get('/me', auth, async (req, res) => {
 router.get('/info/:userId', auth, async (req, res, next) => {
     const loginId = req.user._id;
     const id = req.params.userId;
-    if (loginId == id) {s
+    if (loginId == id) {
+        s
         const user = await User.findById(id)
         const user_info = await User_Info.find({ user: user.id }).limit(6).exec()
         const user_histories = await Film_User_History.find({ user: user.id }).exec();
@@ -383,7 +442,7 @@ router.get('/info/:userId', auth, async (req, res, next) => {
                         //user_rating: user_rating,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/user'
+                            url: 'http://localhost:4000/user'
                         }
                     });
                 } else {
@@ -475,20 +534,20 @@ router.get('/rating_history/:userId', auth, async (req, res, next) => {
 
 
 
-router.post('/logout', auth, async (req, res) => {
-    // Log user out of the application
-    try {
-        req.user.tokens = req.user.tokens.filter((token) => {
-            return token.token != req.token
-        })
-        await req.user.save()
-        res.status(200).json({ message: 'logout successfull' })
-    } catch (err) {
-        res.status(500).json({ error: err })
-    }
-})
+// router.post('/logout', auth, async (req, res) => {
+//     // Log user out of the application
+//     try {
+//         req.user.token = req.user.tokens.filter((token) => {
+//             return token.token != req.token
+//         })
+//         await req.user.save()
+//         res.status(200).json({ message: 'logout successfull' })
+//     } catch (err) {
+//         res.status(500).json({ error: err })
+//     }
+// })
 
-router.post('/logoutall', auth, async (req, res) => {
+router.post('/logout', auth, async (req, res) => {
     // Log user out of all devices
     try {
         req.user.tokens.splice(0, req.user.tokens.length)
@@ -499,10 +558,10 @@ router.post('/logoutall', auth, async (req, res) => {
     }
 })
 
-router.delete('/delete/:userinfoId', function (req, res) {
-    User.findByIdAndRemove(req.params.userinfoId, function (err, user) {
+router.delete('/delete/:userId', function (req, res) {
+    User.findByIdAndRemove(req.params.userId, function (err, user) {
         if (err) return res.status(500).send("There was a problem deleting the user.");
-        res.status(200).send("User: " + user.username + " was deleted.");
+        res.status(200).send("User: " + user.name + " was deleted.");
     });
 });
 
