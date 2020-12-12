@@ -17,7 +17,7 @@ const { resolveSoa } = require('dns');
 const category = require('../models/category');
 const director = require('../models/director');
 const { estimatedDocumentCount } = require('../models/film');
-
+const Image = require('../models/image');
 
 
 
@@ -191,17 +191,24 @@ router.post('/new', upload.single('coverImageName'), async (req, res, next) => {
         const category = await film.Save_Category(categoryId)
         //film.save()  
         res.status(200).json({
-            message: 'Login Successful',
-            category: category,
+            message: 'Create Successful',
+           // category: category,
             film: film,
 
         })
     } else {
         try {
+            let image = new Image({
+				_id: new mongoose.Types.ObjectId(),
+				imageData: req.file.buffer.toString('base64')
+			});
+
+			console.log('IMAGE : ' + image._id);
             const film = new Film({
                 _id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
-                coverImageName: req.file.buffer.toString('base64'),
+                imageUrl: 'http://localhost:4000/image/' + image._id,
+                image_id:image._id,
                 //imgType:req.body.coverImageName.type,
                 //rating :req.body.rating,
                 publishDate: req.body.publishDate,
@@ -212,12 +219,13 @@ router.post('/new', upload.single('coverImageName'), async (req, res, next) => {
             })
 
             await film.save()
+            await image.save()
             const categoryId = req.body.categoryId
             const category = film.Save_Category(categoryId)
             res.status(200).json({
                 message: 'Success',
                 film: film,
-                category: category
+               // category: category
             })
         } catch (err) {
             res.status(500).json({
@@ -439,9 +447,14 @@ router.put('/edit/:filmId', upload.single('coverImageName'), async (req, res, ne
     film = await Film.findById(req.params.filmId)
     const rating = await Rating.find({ film: film.id }).exec();
     const comment = await Comment.find({ film: film.id }).exec();
+    let image = new Image({
+		_id: new mongoose.Types.ObjectId(),
+		imageData: req.file.buffer.toString('base64')
+	});
 
     film.name = req.body.name,
-        film.coverImageName = req.file.buffer.toString('base64'),
+    (film.imageUrl = 'http://localhost:4000/image/' + image._id),
+    (film.image_id=image._id),
         film.publishDate = req.body.publishDate,
         film.description = req.body.description,
         film.linkTrailer = req.body.linkTrailer,
@@ -479,7 +492,7 @@ router.put('/edit/:filmId', upload.single('coverImageName'), async (req, res, ne
                         _id: result._id,
                         request: {
                             type: 'GET',
-                            url: 'http://localhost:3000/film/' + result._id
+                            url: 'http://localhost:4000/film/' + result._id
                         }
                     }
 
@@ -499,8 +512,10 @@ router.put('/edit/:filmId', upload.single('coverImageName'), async (req, res, ne
 
 });
 
-router.delete('/delete/:filmId', (req, res, next) => {
+router.delete('/delete/:filmId', async(req, res, next) => {
     const id = req.params.filmId;
+    const film =await Film.findById(id)
+    Image.findByIdAndRemove(film.image_id).exec()
     Film.remove({ _id: id })
         .exec()
         .then(result => {
@@ -530,5 +545,6 @@ router.delete('/delete/:filmId', (req, res, next) => {
                 error: err
             });
         });
+        
 });
 module.exports = router;

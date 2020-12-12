@@ -7,7 +7,8 @@ const coverImageBasePath = 'uploads/filmCovers';
 const filmSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   name: { type: String, require: true },
-  coverImageName:{type:String,require:true},
+  imageUrl: { type: String, require: true },
+  image_id:{type:mongoose.Schema.Types.ObjectId,require:true,ref:'Image'},
   publishDate: { type: Date, require: true },
   create_at: { type: Date, require: true, default: Date.now },
   description: { type: String, require: true },
