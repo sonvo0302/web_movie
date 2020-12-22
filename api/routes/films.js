@@ -192,23 +192,23 @@ router.post('/new', upload.single('coverImageName'), async (req, res, next) => {
         //film.save()  
         res.status(200).json({
             message: 'Create Successful',
-           // category: category,
+            // category: category,
             film: film,
 
         })
     } else {
         try {
             let image = new Image({
-				_id: new mongoose.Types.ObjectId(),
-				imageData: req.file.buffer.toString('base64')
-			});
+                _id: new mongoose.Types.ObjectId(),
+                imageData: req.file.buffer.toString('base64')
+            });
 
-			console.log('IMAGE : ' + image._id);
+            console.log('IMAGE : ' + image._id);
             const film = new Film({
                 _id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
                 imageUrl: 'http://localhost:4000/image/' + image._id,
-                image_id:image._id,
+                image_id: image._id,
                 //imgType:req.body.coverImageName.type,
                 //rating :req.body.rating,
                 publishDate: req.body.publishDate,
@@ -225,7 +225,7 @@ router.post('/new', upload.single('coverImageName'), async (req, res, next) => {
             res.status(200).json({
                 message: 'Success',
                 film: film,
-               // category: category
+                // category: category
             })
         } catch (err) {
             res.status(500).json({
@@ -354,9 +354,9 @@ router.get('/:filmId', auth, async (req, res, next) => {
                             avg = total / rating.length;
                         }
                         res.status(200).json({
-                            message:'Successfull',
+                            message: 'Successfull',
                             ratingAverage: avg,
-                            comment:comment,
+                            comment: comment,
                             categories: doc,
                             films: films
                         });
@@ -420,41 +420,19 @@ router.get('/:filmId', auth, async (req, res, next) => {
 })
 
 router.put('/edit/:filmId', upload.single('coverImageName'), async (req, res, next) => {
-    // const id =req.params.filmId
-    // const updateOps={};
-    // for(const ops of req.body){
-    //     updateOps[ops.propName]=ops.value;   
-    // }
-    // Film.update({_id:id},{$set:updateOps})
-    // .exec()
-    // .then(result=>{
 
-    //     res.status(200).json({
-    //         message:'Film updated',
-    //         request:{
-    //             type:'GET',
-    //             url:'http://localhost:3000/films/'+id
-    //         }
-    //     });
-    // })
-    // .catch(err=>{
-    //     console.log(err);
-    //     res.status(500).json({
-    //         error:err
-    //     });
-    // });
     let film;
     film = await Film.findById(req.params.filmId)
     const rating = await Rating.find({ film: film.id }).exec();
     const comment = await Comment.find({ film: film.id }).exec();
     let image = new Image({
-		_id: new mongoose.Types.ObjectId(),
-		imageData: req.file.buffer.toString('base64')
-	});
+        _id: new mongoose.Types.ObjectId(),
+        imageData: req.file.buffer.toString('base64')
+    });
 
     film.name = req.body.name,
-    (film.imageUrl = 'http://localhost:4000/image/' + image._id),
-    (film.image_id=image._id),
+        (film.imageUrl = 'http://localhost:4000/image/' + image._id),
+        (film.image_id = image._id),
         film.publishDate = req.body.publishDate,
         film.description = req.body.description,
         film.linkTrailer = req.body.linkTrailer,
@@ -512,9 +490,9 @@ router.put('/edit/:filmId', upload.single('coverImageName'), async (req, res, ne
 
 });
 
-router.delete('/delete/:filmId', async(req, res, next) => {
+router.delete('/delete/:filmId', async (req, res, next) => {
     const id = req.params.filmId;
-    const film =await Film.findById(id)
+    const film = await Film.findById(id)
     Image.findByIdAndRemove(film.image_id).exec()
     Film.remove({ _id: id })
         .exec()
@@ -545,6 +523,6 @@ router.delete('/delete/:filmId', async(req, res, next) => {
                 error: err
             });
         });
-        
+
 });
 module.exports = router;
